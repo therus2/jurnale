@@ -1,0 +1,20 @@
+[
+  {
+    "index": 1,
+    "subject": "Классный час",
+    "timeStart": "09:15",
+    "timeEnd": "10:00",
+    "teacher": "Поворотова Е.В.",
+    "room": "4308",
+    "week": "both"
+  },
+  {
+      "index": 2,
+      "subject": "Русский язык",
+      "timeStart": "10:10",
+      "timeEnd": "11:40",
+      "teacher": "Хованских О.А",
+      "room": "***",
+      "week": "both"
+    }
+]

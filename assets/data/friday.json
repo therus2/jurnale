@@ -1,0 +1,11 @@
+[
+  {
+    "index": 1,
+    "subject": "Информатика",
+    "timeStart": "08:30",
+    "timeEnd": "10:00",
+    "teacher": "Бойко Е.В.",
+    "room": "2302",
+    "week": "both"
+  }
+]
