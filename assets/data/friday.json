@@ -1,11 +1,29 @@
 [
   {
     "index": 1,
-    "subject": "Информатика",
-    "timeStart": "08:30",
+    "subject": "Физическая культура",
+    "timeStart": "8:30",
     "timeEnd": "10:00",
-    "teacher": "Бойко Е.В.",
-    "room": "2302",
+    "teacher": "ПХворостьян Е.Н",
+    "room": "4210",
+    "week": "both"
+  },
+  {
+    "index": 2,
+    "subject": "Физика",
+    "timeStart": "10:10",
+    "timeEnd": "11:40",
+    "teacher": "Никифорова Т.Э",
+    "room": "2306",
+    "week": "both"
+  },
+  {
+    "index": 3,
+    "subject": "География",
+    "timeStart": "12:20",
+    "timeEnd": "13:50",
+    "teacher": "Адамантова В.А",
+    "room": "1306",
     "week": "both"
   }
 ]

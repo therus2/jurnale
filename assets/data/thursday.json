@@ -1,11 +1,20 @@
 [
   {
     "index": 1,
-    "subject": "Архитектура",
-    "timeStart": "08:30",
-    "timeEnd": "10:00",
-    "teacher": "Поворотова Е.В.",
-    "room": "4308",
+    "subject": "Основы безопасноти и защиты Родины",
+    "timeStart": "14:00",
+    "timeEnd": "15:30",
+    "teacher": "Маковский К.Э",
+    "room": "2304",
+    "week": "both"
+  },
+  {
+    "index": 5,
+    "subject": "История",
+    "timeStart": "15:40",
+    "timeEnd": "17:10",
+    "teacher": "Бабулин И.Б",
+    "room": "2401-Б",
     "week": "both"
   }
 ]

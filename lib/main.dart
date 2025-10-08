@@ -30,6 +30,7 @@ class MyApp extends StatelessWidget {
       title: 'ИП-152 Расписание',
       theme: ThemeData(primarySwatch: Colors.blue),
       home: HomePage(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -97,13 +98,30 @@ class _HomePageState extends State<HomePage> {
                 mainAxisSpacing: 8,
                 crossAxisSpacing: 8,
                 children: [
-                  ElevatedButton(onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>monday.DayScreen())), child: Text('Понедельник')),
-                  ElevatedButton(onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>tuesday.DayScreen())), child: Text('Вторник')),
-                  ElevatedButton(onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>wednesday.DayScreen())), child: Text('Среда')),
-                  ElevatedButton(onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>thursday.DayScreen())), child: Text('Четверг')),
-                  ElevatedButton(onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>friday.DayScreen())), child: Text('Пятница')),
-                  ElevatedButton(onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>saturday.DayScreen())), child: Text('Суббота')),
-                  ElevatedButton(onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>sunday.DayScreen())), child: Text('Воскресенье')),
+                  ElevatedButton(
+                      onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>monday.DayScreen())),
+                      child: Text('Понедельник')
+                  ),
+                  ElevatedButton(
+                      onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>tuesday.DayScreen())),
+                      child: Text('Вторник')
+                  ),
+                  ElevatedButton(
+                      onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>wednesday.DayScreen())),
+                      child: Text('Среда')
+                  ),
+                  ElevatedButton(
+                      onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>thursday.DayScreen())),
+                      child: Text('Четверг')
+                  ),
+                  ElevatedButton(
+                      onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>friday.DayScreen())),
+                      child: Text('Пятница')
+                  ),
+                  ElevatedButton(
+                      onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>saturday.DayScreen())),
+                      child: Text('Суббота')
+                  ),
                 ],
               ),
             )

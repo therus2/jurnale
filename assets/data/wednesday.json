@@ -1,11 +1,47 @@
 [
   {
     "index": 1,
-    "subject": "Русский язык",
-    "timeStart": "08:30",
-    "timeEnd": "10:00",
-    "teacher": "Колосовская С.В.",
-    "room": "-",
+    "subject": "Математика",
+    "timeStart": "10:10",
+    "timeEnd": "11:40",
+    "teacher": "Семенова Т.В.",
+    "room": "1307",
     "week": "both"
+  },
+  {
+  "index": 3,
+  "subject": "Обществознание",
+  "timeStart": "12:20",
+  "timeEnd": "13:50",
+  "teacher": "Бабулин И.Б",
+  "room": "2401-Б",
+  "week": "both"
+  },
+  {
+    "index": 4,
+    "subject": "Физика",
+    "timeStart": "14:00",
+    "timeEnd": "15:30",
+    "teacher": "Никифорова Т.Э",
+    "room": "2306",
+    "week": "both"
+  },
+  {
+    "index": 5,
+    "subject": "Основы финансовой грамотности",
+    "timeStart": "15:40",
+    "timeEnd": "17:10",
+    "teacher": "Занчарова И.В",
+    "room": "****",
+    "week": "odd"
+  },
+  {
+    "index": 5,
+    "subject": "Биология",
+    "timeStart": "15:40",
+    "timeEnd": "17:10",
+    "teacher": "Дымкова Г.В",
+    "room": "1306",
+    "week": "even"
   }
 ]

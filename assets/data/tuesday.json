@@ -1,11 +1,48 @@
 [
   {
     "index": 1,
-    "subject": "География",
+    "subject": "Литература",
     "timeStart": "08:30",
     "timeEnd": "10:00",
-    "teacher": "Адамантова В.А.",
-    "room": "1306",
+    "teacher": "Хованских О.А",
+    "room": "****",
     "week": "both"
-  }
+  },
+  {
+    "index": 2,
+    "subject": "Иностранный язык 1",
+    "timeStart": "10:10",
+    "timeEnd": "11:40",
+    "teacher": "Войтко Е.В",
+    "room": "***",
+    "week": "both"
+  },
+  {
+    "index": 2,
+    "subject": "Иностранный язык 2",
+    "timeStart": "10:10",
+    "timeEnd": "11:40",
+    "teacher": "Сухарева Е.А",
+    "room": "***",
+    "week": "both"
+  },
+  {
+    "index": 3,
+    "subject": "Химия",
+    "timeStart": "12:20",
+    "timeEnd": "13:50",
+    "teacher": "Смирнова Г.Н",
+    "room": "2407",
+    "week": "both"
+  },
+  {
+    "index": 4,
+    "subject": "Математика",
+    "timeStart": "14:00",
+    "timeEnd": "15:30",
+    "teacher": "Семенова Т.В",
+    "room": "1307",
+    "week": "both"
+  },
+
 ]

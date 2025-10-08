@@ -16,5 +16,41 @@
       "teacher": "Хованских О.А",
       "room": "***",
       "week": "both"
-    }
+    },
+  {
+    "index": 3,
+    "subject": "Информатика",
+    "timeStart": "12:20",
+    "timeEnd": "13:50",
+    "teacher": "Бойко Е.В",
+    "room": "2302",
+    "week": "both"
+  },
+  {
+  "index": 4,
+  "subject": "Информатика 1 подгрупа",
+  "timeStart": "14:00",
+  "timeEnd": "15:30",
+  "teacher": "Хованских О.А",
+  "room": "2302",
+  "week": "even"
+  },
+  {
+    "index": 4,
+    "subject": "История",
+    "timeStart": "14:00",
+    "timeEnd": "15:30",
+    "teacher": "Бабулин И.Б",
+    "room": "2401-Б",
+    "week": "odd"
+  },
+  {
+  "index": 5,
+  "subject": "Информатика 2 подгрупа",
+  "timeStart": "15:40",
+  "timeEnd": "17:10",
+  "teacher": "Хованских О.А",
+  "room": "2302",
+  "week": "odd"
+  }
 ]
