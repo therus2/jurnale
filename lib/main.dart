@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -108,11 +109,18 @@ class _HomePageState extends State<HomePage> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       ElevatedButton(
-                        onPressed: openToday,
+                        onPressed: (){
+                          HapticFeedback.selectionClick();
+                          openToday();
+                        },
                         child: Text('Открыть сегодня'),
+
                       ),
                       ElevatedButton(
-                        onPressed: openTomorrow,
+                        onPressed: (){
+                          HapticFeedback.selectionClick();
+                          openTomorrow();
+                        },
                         child: Text('Открыть завтра'),
                       ),
 
@@ -130,7 +138,10 @@ class _HomePageState extends State<HomePage> {
                 crossAxisSpacing: 8,
                 children: [
                   ElevatedButton(
-                      onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>monday.DayScreen())),
+                      onPressed: (){
+                        HapticFeedback.selectionClick();
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_)=>monday.DayScreen()));
+                        },
                       child: Text('Понедельник', style: TextStyle(fontSize: 17),),
                       style: ButtonStyle(
                         backgroundColor: MaterialStateProperty.all(Color.fromARGB(255, 234, 228, 255)),
@@ -142,7 +153,10 @@ class _HomePageState extends State<HomePage> {
                       ),
                   ),
                   ElevatedButton(
-                      onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>tuesday.DayScreen())),
+                      onPressed: (){
+                        HapticFeedback.selectionClick();
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_)=>tuesday.DayScreen()));
+                        },
                       child: Text('Вторник', style: TextStyle(fontSize: 17),),
                       style: ButtonStyle(
                         backgroundColor: MaterialStateProperty.all(Color.fromARGB(255, 234, 228, 255)),
@@ -154,7 +168,10 @@ class _HomePageState extends State<HomePage> {
                       ),
                   ),
                   ElevatedButton(
-                      onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>wednesday.DayScreen())),
+                      onPressed: (){
+                        HapticFeedback.selectionClick();
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_)=>wednesday.DayScreen()));
+                        },
                       child: Text('Среда', style: TextStyle(fontSize: 17),),
                       style: ButtonStyle(
                         backgroundColor: MaterialStateProperty.all(Color.fromARGB(255, 234, 228, 255)),
@@ -166,7 +183,10 @@ class _HomePageState extends State<HomePage> {
                       ),
                   ),
                   ElevatedButton(
-                      onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>thursday.DayScreen())),
+                      onPressed: (){
+                        HapticFeedback.selectionClick();
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_)=>thursday.DayScreen()));
+                      },
                       child: Text('Четверг', style: TextStyle(fontSize: 17),),
                       style: ButtonStyle(
                         backgroundColor: MaterialStateProperty.all(Color.fromARGB(255, 234, 228, 255)),
@@ -178,7 +198,10 @@ class _HomePageState extends State<HomePage> {
                       ),
                   ),
                   ElevatedButton(
-                      onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>friday.DayScreen())),
+                      onPressed: (){
+                        HapticFeedback.selectionClick();
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_)=>friday.DayScreen()));
+                        },
                       child: Text('Пятница', style: TextStyle(fontSize: 17),),
                       style: ButtonStyle(
                         backgroundColor: MaterialStateProperty.all(Color.fromARGB(255, 234, 228, 255)),
@@ -190,7 +213,10 @@ class _HomePageState extends State<HomePage> {
                       ),
                   ),
                   ElevatedButton(
-                      onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>saturday.DayScreen())),
+                      onPressed: (){
+                        HapticFeedback.selectionClick();
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_)=>saturday.DayScreen()));
+                      },
                       child: Text('Суббота', style: TextStyle(fontSize: 17),),
                       style: ButtonStyle(
                         backgroundColor: MaterialStateProperty.all(Color.fromARGB(255, 234, 228, 255)),

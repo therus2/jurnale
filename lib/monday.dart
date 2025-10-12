@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show rootBundle, HapticFeedback;
 import 'pair_detail.dart';
 
 int getWeekNumber(DateTime date) {
@@ -59,7 +59,10 @@ class _DayScreenState extends State<DayScreen> {
                 title: Text('${p.index}. ${p.subject}'), // Исправлено
                 subtitle: Text('${p.timeStart} — ${p.timeEnd}\n${p.teacher} ${p.room}'),
                 isThreeLine: true,
-                onTap: ()=>openPair(p),
+                onTap: (){
+                    HapticFeedback.selectionClick();
+                    openPair(p);
+                },
               ),
             );
           },
