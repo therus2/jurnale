@@ -53,6 +53,7 @@ class _DayScreenState extends State<DayScreen> {
           itemBuilder: (context, i) {
             var p = pairs[i];
             return Card(
+              color: Color.fromARGB(255, 234, 228, 255),
               margin: EdgeInsets.symmetric(horizontal:12, vertical:6),
               child: ListTile(
                 title: Text('${p.index}. ${p.subject}'), // Исправлено
