@@ -71,6 +71,22 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void openTomorrow() {
+    int tomorrow = todayWeekday + 1;
+    if (tomorrow > 7) tomorrow = 1; // если воскресенье → понедельник
+
+    switch (tomorrow) {
+      case 1: Navigator.of(context).push(MaterialPageRoute(builder: (_)=>monday.DayScreen())); break;
+      case 2: Navigator.of(context).push(MaterialPageRoute(builder: (_)=>tuesday.DayScreen())); break;
+      case 3: Navigator.of(context).push(MaterialPageRoute(builder: (_)=>wednesday.DayScreen())); break;
+      case 4: Navigator.of(context).push(MaterialPageRoute(builder: (_)=>thursday.DayScreen())); break;
+      case 5: Navigator.of(context).push(MaterialPageRoute(builder: (_)=>friday.DayScreen())); break;
+      case 6: Navigator.of(context).push(MaterialPageRoute(builder: (_)=>saturday.DayScreen())); break;
+      case 7: Navigator.of(context).push(MaterialPageRoute(builder: (_)=>sunday.DayScreen())); break;
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,13 +97,28 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Card(
-              child: ListTile(
-                title: Text(weekType, style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('Сегодня: ' + todayName),
-                trailing: ElevatedButton(
-                  child: Text('Открыть сегодня'),
-                  onPressed: openToday,
-                ),
+              color: Color.fromARGB(255, 234, 228, 255),
+              child: Column(
+                children: [
+                  ListTile(
+                    title: Text(weekType, style: TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text('Сегодня: $todayName'),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton(
+                        onPressed: openToday,
+                        child: Text('Открыть сегодня'),
+                      ),
+                      ElevatedButton(
+                        onPressed: openTomorrow,
+                        child: Text('Открыть завтра'),
+                      ),
+
+                    ],
+                  ),
+                ],
               ),
             ),
             SizedBox(height:12),
@@ -100,27 +131,75 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   ElevatedButton(
                       onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>monday.DayScreen())),
-                      child: Text('Понедельник')
+                      child: Text('Понедельник', style: TextStyle(fontSize: 17),),
+                      style: ButtonStyle(
+                        backgroundColor: MaterialStateProperty.all(Color.fromARGB(255, 234, 228, 255)),
+                        shape: MaterialStateProperty.all(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                        ),
+                      ),
                   ),
                   ElevatedButton(
                       onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>tuesday.DayScreen())),
-                      child: Text('Вторник')
+                      child: Text('Вторник', style: TextStyle(fontSize: 17),),
+                      style: ButtonStyle(
+                        backgroundColor: MaterialStateProperty.all(Color.fromARGB(255, 234, 228, 255)),
+                        shape: MaterialStateProperty.all(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                        ),
+                      ),
                   ),
                   ElevatedButton(
                       onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>wednesday.DayScreen())),
-                      child: Text('Среда')
+                      child: Text('Среда', style: TextStyle(fontSize: 17),),
+                      style: ButtonStyle(
+                        backgroundColor: MaterialStateProperty.all(Color.fromARGB(255, 234, 228, 255)),
+                        shape: MaterialStateProperty.all(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                        ),
+                      ),
                   ),
                   ElevatedButton(
                       onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>thursday.DayScreen())),
-                      child: Text('Четверг')
+                      child: Text('Четверг', style: TextStyle(fontSize: 17),),
+                      style: ButtonStyle(
+                        backgroundColor: MaterialStateProperty.all(Color.fromARGB(255, 234, 228, 255)),
+                        shape: MaterialStateProperty.all(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                        ),
+                      ),
                   ),
                   ElevatedButton(
                       onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>friday.DayScreen())),
-                      child: Text('Пятница')
+                      child: Text('Пятница', style: TextStyle(fontSize: 17),),
+                      style: ButtonStyle(
+                        backgroundColor: MaterialStateProperty.all(Color.fromARGB(255, 234, 228, 255)),
+                        shape: MaterialStateProperty.all(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                        ),
+                      ),
                   ),
                   ElevatedButton(
                       onPressed: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (_)=>saturday.DayScreen())),
-                      child: Text('Суббота')
+                      child: Text('Суббота', style: TextStyle(fontSize: 17),),
+                      style: ButtonStyle(
+                        backgroundColor: MaterialStateProperty.all(Color.fromARGB(255, 234, 228, 255)),
+                        shape: MaterialStateProperty.all(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                        ),
+                      ),
                   ),
                 ],
               ),
