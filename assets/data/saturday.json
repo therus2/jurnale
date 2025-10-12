@@ -1,11 +1,29 @@
 [
   {
     "index": 1,
-    "subject": "Учебная практика",
+    "subject": "Биология",
     "timeStart": "08:30",
-    "timeEnd": "10:00",
-    "teacher": "Янушковская Л.А.",
-    "room": "4310",
+    "timeEnd": "09:15",
+    "teacher": "Дымкова Г.В",
+    "room": "Дистант",
+    "week": "both"
+  },
+  {
+    "index": 2,
+    "subject": "Информатика",
+    "timeStart": "12:20",
+    "timeEnd": "13:50",
+    "teacher": "Бойко Е.В",
+    "room": "Дистант",
+    "week": "both"
+  },
+  {
+    "index": 3,
+    "subject": "Математика",
+    "timeStart": "12:20",
+    "timeEnd": "13:00",
+    "teacher": "Семенова Т.В.",
+    "room": "Дистант",
     "week": "both"
   }
 ]
