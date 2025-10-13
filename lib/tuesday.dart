@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle, HapticFeedback;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'pair_detail.dart';
 
 int getWeekNumber(DateTime date) {
@@ -35,6 +36,14 @@ class _DayScreenState extends State<DayScreen> {
     String weekType = (weekOfYear % 2 == 0) ? 'even' : 'odd';
     pairs = arr.map((e) => PairItem.fromMap(e)).where((p)=> (p.week=='both'||p.week==weekType)).toList();
     setState(()=>loading=false);
+    SharedPreferences sp = await SharedPreferences.getInstance();
+    int group = sp.getInt('groupNumber') ?? 1;
+
+    pairs = arr.map((e) => PairItem.fromMap(e)).where((p) {
+      bool weekMatch = (p.week == 'both' || p.week == weekType);
+      bool groupMatch = (p.group == 'both' || p.group == group.toString());
+      return weekMatch && groupMatch;
+    }).toList();
   }
 
   void openPair(PairItem p) async {

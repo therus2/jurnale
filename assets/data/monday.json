@@ -6,7 +6,8 @@
     "timeEnd": "10:00",
     "teacher": "Поворотова Е.В.",
     "room": "4308",
-    "week": "both"
+    "week": "both",
+    "group": "both"
   },
   {
       "index": 2,
@@ -15,7 +16,8 @@
       "timeEnd": "11:40",
       "teacher": "Хованских О.А",
       "room": "***",
-      "week": "both"
+      "week": "both",
+      "group": "both"
     },
   {
     "index": 3,
@@ -24,16 +26,18 @@
     "timeEnd": "13:50",
     "teacher": "Бойко Е.В",
     "room": "2302",
-    "week": "both"
+    "week": "both",
+    "group": "both"
   },
   {
-  "index": 4,
-  "subject": "Информатика 1 подгрупа",
-  "timeStart": "14:00",
-  "timeEnd": "15:30",
-  "teacher": "Хованских О.А",
-  "room": "2302",
-  "week": "even"
+    "index": 4,
+    "subject": "Информатика (1 подгруппа)",
+    "timeStart": "14:00",
+    "timeEnd": "15:30",
+    "teacher": "Бойко Е.В",
+    "room": "2302",
+    "week": "even",
+    "group": "1"
   },
   {
     "index": 4,
@@ -42,15 +46,17 @@
     "timeEnd": "15:30",
     "teacher": "Бабулин И.Б",
     "room": "2401-Б",
-    "week": "odd"
+    "week": "odd",
+    "group": "both"
   },
   {
   "index": 5,
-  "subject": "Информатика 2 подгрупа",
+  "subject": "Информатика (2 подгруппа)",
   "timeStart": "15:40",
   "timeEnd": "17:10",
   "teacher": "Хованских О.А",
   "room": "2302",
-  "week": "odd"
+  "week": "odd",
+  "group": "2"
   }
 ]

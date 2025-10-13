@@ -6,7 +6,8 @@
     "timeEnd": "10:00",
     "teacher": "Хованских О.А",
     "room": "****",
-    "week": "both"
+    "week": "both",
+    "group": "both"
   },
   {
     "index": 2,
@@ -15,7 +16,8 @@
     "timeEnd": "11:40",
     "teacher": "Войтко Е.В",
     "room": "***",
-    "week": "both"
+    "week": "both",
+    "group": "1"
   },
   {
     "index": 2,
@@ -24,7 +26,8 @@
     "timeEnd": "11:40",
     "teacher": "Сухарева Е.А",
     "room": "***",
-    "week": "both"
+    "week": "both",
+    "group": "2"
   },
   {
     "index": 3,
@@ -33,7 +36,8 @@
     "timeEnd": "13:50",
     "teacher": "Смирнова Г.Н",
     "room": "2407",
-    "week": "both"
+    "week": "both",
+    "group": "both"
   },
   {
     "index": 4,
@@ -42,7 +46,8 @@
     "timeEnd": "15:30",
     "teacher": "Семенова Т.В",
     "room": "1307",
-    "week": "both"
+    "week": "both",
+    "group": "both"
   }
 
 ]

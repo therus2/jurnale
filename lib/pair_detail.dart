@@ -19,11 +19,21 @@ class PairItem {
   final String teacher;
   final String room;
   final String week;
+  final String group;
 
-  PairItem(this.index, this.subject, this.timeStart, this.timeEnd, this.teacher, this.room, this.week);
+  PairItem(this.index, this.subject, this.timeStart, this.timeEnd, this.teacher, this.room, this.week, this.group);
 
   factory PairItem.fromMap(Map<String, dynamic> m) {
-    return PairItem(m['index'], m['subject'], m['timeStart'], m['timeEnd'], m['teacher'] ?? '', m['room'] ?? '', m['week'] ?? 'both');
+    return PairItem(
+      m['index'],
+      m['subject'],
+      m['timeStart'],
+      m['timeEnd'],
+      m['teacher'] ?? '',
+      m['room'] ?? '',
+      m['week'] ?? 'both',
+      m['group'] ?? 'both',
+    );
   }
 }
 
