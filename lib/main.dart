@@ -8,6 +8,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
 import 'monday.dart' as monday;
 import 'tuesday.dart' as tuesday;
@@ -70,7 +71,9 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String weekType = '';
   String todayName = '';
-  int todayWeekday = DateTime.now().weekday;
+  int todayWeekday = DateTime
+      .now()
+      .weekday;
   String? _token;
   bool _loading = false;
 
@@ -100,25 +103,32 @@ class _HomePageState extends State<HomePage> {
   void openToday() {
     switch (todayWeekday) {
       case 1:
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => monday.DayScreen()));
+        Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => monday.DayScreen()));
         break;
       case 2:
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => tuesday.DayScreen()));
+        Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => tuesday.DayScreen()));
         break;
       case 3:
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => wednesday.DayScreen()));
+        Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => wednesday.DayScreen()));
         break;
       case 4:
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => thursday.DayScreen()));
+        Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => thursday.DayScreen()));
         break;
       case 5:
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => friday.DayScreen()));
+        Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => friday.DayScreen()));
         break;
       case 6:
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => saturday.DayScreen()));
+        Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => saturday.DayScreen()));
         break;
       case 7:
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => sunday.DayScreen()));
+        Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => sunday.DayScreen()));
         break;
     }
   }
@@ -128,25 +138,32 @@ class _HomePageState extends State<HomePage> {
     if (tomorrow > 7) tomorrow = 1;
     switch (tomorrow) {
       case 1:
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => monday.DayScreen()));
+        Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => monday.DayScreen()));
         break;
       case 2:
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => tuesday.DayScreen()));
+        Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => tuesday.DayScreen()));
         break;
       case 3:
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => wednesday.DayScreen()));
+        Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => wednesday.DayScreen()));
         break;
       case 4:
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => thursday.DayScreen()));
+        Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => thursday.DayScreen()));
         break;
       case 5:
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => friday.DayScreen()));
+        Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => friday.DayScreen()));
         break;
       case 6:
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => saturday.DayScreen()));
+        Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => saturday.DayScreen()));
         break;
       case 7:
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => sunday.DayScreen()));
+        Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => sunday.DayScreen()));
         break;
     }
   }
@@ -171,7 +188,7 @@ class _HomePageState extends State<HomePage> {
           IconButton(
             tooltip: 'Отправить мои заметки (клиент → сервер)',
             icon: const Icon(Icons.cloud_upload),
-            onPressed: _pushLocalNotes,
+            onPressed: _sendLocalNotes,
           ),
         ],
       ),
@@ -187,7 +204,8 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 children: [
                   ListTile(
-                    title: Text(weekType, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    title: Text(weekType,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text('Сегодня: $todayName'),
                   ),
                   Row(
@@ -243,7 +261,8 @@ class _HomePageState extends State<HomePage> {
         Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
       },
       style: ButtonStyle(
-        backgroundColor: MaterialStateProperty.all(const Color.fromARGB(255, 234, 228, 255)),
+        backgroundColor: MaterialStateProperty.all(
+            const Color.fromARGB(255, 234, 228, 255)),
         shape: MaterialStateProperty.all(
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
         ),
@@ -259,38 +278,46 @@ class _HomePageState extends State<HomePage> {
 
     await showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Вход'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: usernameCtrl, decoration: const InputDecoration(labelText: 'username')),
-            TextField(controller: passwordCtrl, decoration: const InputDecoration(labelText: 'password'), obscureText: true),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Отмена')),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _login(usernameCtrl.text.trim(), passwordCtrl.text.trim());
-            },
-            child: const Text('Войти'),
+      builder: (ctx) =>
+          AlertDialog(
+            title: const Text('Вход'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: usernameCtrl,
+                    decoration: const InputDecoration(labelText: 'username')),
+                TextField(controller: passwordCtrl,
+                    decoration: const InputDecoration(labelText: 'password'),
+                    obscureText: true),
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Отмена')),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  _login(usernameCtrl.text.trim(), passwordCtrl.text.trim());
+                },
+                child: const Text('Войти'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
   Future<void> _login(String username, String password) async {
     if (username.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Введите username и password')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Введите username и password')));
       return;
     }
     setState(() => _loading = true);
     try {
       final url = Uri.parse('$serverBaseUrl/login');
-      final res = await http.post(url, headers: {'Content-Type': 'application/json'}, body: jsonEncode({'username': username, 'password': password}));
+      final res = await http.post(
+          url, headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'username': username, 'password': password}));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         final token = (data['access'] ?? data['token'] ?? data['access_token']);
@@ -298,20 +325,25 @@ class _HomePageState extends State<HomePage> {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('jwt_token', token);
           setState(() => _token = token);
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Авторизация успешна')));
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Авторизация успешна')));
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Токен не найден в ответе')));
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Токен не найден в ответе')));
         }
       } else {
         String msg = 'Ошибка входа';
         try {
           final err = jsonDecode(res.body);
-          msg = (err is Map && err['detail'] != null) ? err['detail'] : res.body;
+          msg =
+          (err is Map && err['detail'] != null) ? err['detail'] : res.body;
         } catch (_) {}
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(msg)));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка: $e')));
     } finally {
       setState(() => _loading = false);
     }
@@ -334,8 +366,12 @@ class _HomePageState extends State<HomePage> {
             'id': null, // просим сервер сгенерировать id
             'subject': subject,
             'text': text,
-            'created_at': DateTime.now().millisecondsSinceEpoch,
-            'updated_at': DateTime.now().millisecondsSinceEpoch,
+            'created_at': DateTime
+                .now()
+                .millisecondsSinceEpoch,
+            'updated_at': DateTime
+                .now()
+                .millisecondsSinceEpoch,
             'deleted': false
           });
         }
@@ -345,104 +381,156 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ======= Отправка локальных заметок на сервер =======
-  Future<void> _pushLocalNotes() async {
+  Future<void> _sendLocalNotes() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('jwt_token');
     if (token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Сначала авторизуйтесь')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Сначала авторизуйтесь')));
       return;
     }
     setState(() => _loading = true);
     try {
-      final notes = await _collectLocalNotesForSync();
+      List<Map<String, dynamic>> notes = [];
+      // Собираем все заметки из prefs
+      Set<String> subjects = prefs.getKeys().where((k) =>
+          k.startsWith('notes_')).toSet();
+      String username = prefs.getString('username') ?? 'Гость';
+      int now = DateTime
+          .now()
+          .millisecondsSinceEpoch;
+      for (String key in subjects) {
+        List<String>? saved = prefs.getStringList(key);
+        if (saved != null) {
+          for (String s in saved) {
+            try {
+              var json = jsonDecode(s);
+              String text = json['text'] ?? '';
+              String id = json['id'] ?? Uuid().v4();
+              notes.add({
+                'id': id,
+                'client_id': _randomClientId(),
+                'subject': key.replaceFirst('notes_', ''),
+                'text': text, // Только чистый текст
+                'author': username,
+                'uploaded_at': json['uploaded_at'] ?? now,
+                'deleted': false,
+              });
+            } catch (e) {
+              print('Error parsing local note: $e');
+            }
+          }
+        }
+      }
       if (notes.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Нет локальных заметок для отправки')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Нет локальных заметок для отправки')));
         return;
       }
       final url = Uri.parse('$serverBaseUrl/notes/sync');
-      final res = await http.post(url, headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'}, body: jsonEncode({'notes': notes}));
+      final res = await http.post(url, headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token'
+      }, body: jsonEncode({'notes': notes}));
       if (res.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Локальные заметки отправлены на сервер')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Локальные заметки отправлены на сервер')));
       } else {
         String msg = 'Ошибка отправки: ${res.statusCode}';
         try {
           final d = jsonDecode(res.body);
           msg = d.toString();
         } catch (_) {}
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(msg)));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка: $e')));
     } finally {
       setState(() => _loading = false);
     }
   }
 
-  // ======= Получение обновлений с сервера и merge в локальные заметки =======
+// ======= Получение обновлений с сервера и merge в локальные заметки =======
   Future<void> _fetchUpdates() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('jwt_token');
     if (token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Сначала авторизуйтесь')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Сначала авторизуйтесь')));
       return;
     }
     setState(() => _loading = true);
     try {
-      // можно хранить последний timestamp в prefs, но для удобства пока делаем since=0 (получим все)
       final since = prefs.getInt('notes_last_sync') ?? 0;
+      print('Fetching updates with since=$since');
       final url = Uri.parse('$serverBaseUrl/notes/updates?since=$since');
-      final res = await http.get(url, headers: {'Authorization': 'Bearer $token'});
+      final res = await http.get(
+          url, headers: {'Authorization': 'Bearer $token'});
+      print('Server response: ${res.body}');
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         final List<dynamic> notes = data['notes'] ?? [];
         int cntAdded = 0;
         for (final n in notes) {
           final subject = (n['subject'] ?? '').toString();
-          final author = (n['author_display_name'] ?? n['author_username'] ?? 'Автор').toString();
-          final created = n['created_at'] is int ? n['created_at'] as int : DateTime.now().millisecondsSinceEpoch;
+          final author = (n['author'] ?? prefs.getString('username') ?? 'Гость')
+              .toString();
+          final uploaded = n['uploaded_at'] is int ? n['uploaded_at'] : DateTime
+              .now()
+              .millisecondsSinceEpoch;
           final deleted = n['deleted'] == true;
-          final text = (n['text'] ?? '').toString();
-          final display = '$author [${_fmtDateMs(created)}] — $text';
+          final text = (n['text'] ?? '')
+              .toString(); // Только чистый текст с сервера
+          final id = n['id']?.toString() ?? '';
+          final noteJson = jsonEncode({
+            'id': id,
+            'text': text,
+            'uploaded_at': uploaded,
+            'author': author,
+          });
           final key = 'notes_$subject';
-          final list = prefs.getStringList(key) ?? [];
-
-          if (deleted) {
-            // удаление: убираем точно совпадающую строку (если есть)
-            if (list.remove(display)) {
-              await prefs.setStringList(key, list);
-            } else {
-              // если точной строки нет, попробуем удалить по тексту (после '— ')
-              final idx = list.indexWhere((s) => s.split('—').length > 1 && s.split('—').last.trim() == text.trim());
-              if (idx >= 0) {
-                list.removeAt(idx);
-                await prefs.setStringList(key, list);
+          List<String> list = prefs.getStringList(key) ?? [];
+          // Парсим локальные заметки
+          List<Map<String, dynamic>> localNotes = list.map((s) =>
+          jsonDecode(s) as Map<String, dynamic>).toList();
+          bool exists = false;
+          for (int i = 0; i < localNotes.length; i++) {
+            if (localNotes[i]['id']?.toString() == id) {
+              if (deleted) {
+                list.removeAt(i);
+              } else {
+                list[i] = noteJson;
               }
-            }
-          } else {
-            // добавляем, если нет дубликата
-            if (!list.contains(display)) {
-              list.add(display);
-              await prefs.setStringList(key, list);
-              cntAdded++;
+              exists = true;
+              break;
             }
           }
+          if (!exists && !deleted) {
+            list.add(noteJson);
+            cntAdded++;
+          }
+          await prefs.setStringList(key, list);
         }
-
-        // обновляем since
-        final serverTime = data['serverTime'] is int ? data['serverTime'] as int : DateTime.now().millisecondsSinceEpoch;
-        await prefs.setInt('notes_since', serverTime);
-
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Получено ${notes.length} записей, добавлено $cntAdded новых')));
+        final serverTime = data['serverTime'] is int
+            ? data['serverTime']
+            : DateTime
+            .now()
+            .millisecondsSinceEpoch;
+        await prefs.setInt('notes_last_sync', serverTime);
+        print('Saved serverTime: $serverTime');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+            'Получено ${notes.length} записей, добавлено $cntAdded новых')));
       } else {
-        String msg = 'Ошибка получения обновлений: ${res.statusCode}';
-        try {
-          final d = jsonDecode(res.body);
-          msg = d.toString();
-        } catch (_) {}
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+        print('Server error: ${res.statusCode}, ${res.body}');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Ошибка получения обновлений: ${res.statusCode}')));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка: $e')));
+      print('Fetch updates error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка: $e')));
     } finally {
       setState(() => _loading = false);
     }
