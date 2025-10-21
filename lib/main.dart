@@ -385,68 +385,80 @@ class _HomePageState extends State<HomePage> {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('jwt_token');
     if (token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Сначала авторизуйтесь')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Сначала авторизуйтесь')));
       return;
     }
+
     setState(() => _loading = true);
+
     try {
-      List<Map<String, dynamic>> notes = [];
-      // Собираем все заметки из prefs
-      Set<String> subjects = prefs.getKeys().where((k) =>
-          k.startsWith('notes_')).toSet();
-      String username = prefs.getString('username') ?? 'Гость';
-      int now = DateTime
-          .now()
-          .millisecondsSinceEpoch;
-      for (String key in subjects) {
-        List<String>? saved = prefs.getStringList(key);
-        if (saved != null) {
-          for (String s in saved) {
+      final notesToSend = <Map<String, dynamic>>[];
+      final username = prefs.getString('username') ?? 'user';
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      // Собираем все заметки из SharedPreferences
+      for (final key in prefs.getKeys()) {
+        if (key.startsWith('notes_')) {
+          final subject = key.substring('notes_'.length);
+          final savedNotes = prefs.getStringList(key) ?? [];
+          for (final noteStr in savedNotes) {
             try {
-              var json = jsonDecode(s);
-              String text = json['text'] ?? '';
-              String id = json['id'] ?? Uuid().v4();
-              notes.add({
+              // noteStr — это JSON-строка, сохранённая ранее
+              final noteMap = jsonDecode(noteStr) as Map<String, dynamic>;
+
+              final rawId = noteMap['id'];
+              String id;
+              if (rawId is String && rawId.isNotEmpty) {
+                id = rawId;
+              } else {
+                id = const Uuid().v4();
+              }
+
+              // Формируем чистый объект для отправки
+              notesToSend.add({
                 'id': id,
-                'client_id': _randomClientId(),
-                'subject': key.replaceFirst('notes_', ''),
-                'text': text, // Только чистый текст
-                'author': username,
-                'uploaded_at': json['uploaded_at'] ?? now,
-                'deleted': false,
+                'subject': subject,
+                'text': noteMap['text'] ?? '',
+                'created_at': noteMap['created_at'] ?? now,
+                'updated_at': noteMap['updated_at'] ?? now,
+                'uploaded_at': noteMap['uploaded_at'] ?? now,
+                'deleted': noteMap['deleted'] ?? false,
               });
             } catch (e) {
-              print('Error parsing local note: $e');
+              print('Ошибка парсинга заметки: $e');
             }
           }
         }
       }
-      if (notes.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Нет локальных заметок для отправки')));
+
+      if (notesToSend.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Нет заметок для отправки')));
         return;
       }
-      final url = Uri.parse('$serverBaseUrl/notes/sync');
-      final res = await http.post(url, headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token'
-      }, body: jsonEncode({'notes': notes}));
-      if (res.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Локальные заметки отправлены на сервер')));
+
+      // 🔥 ОТПРАВКА: ОДИН раз кодируем в JSON
+      final response = await http.post(
+        Uri.parse('$serverBaseUrl/notes/sync'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'notes': notesToSend}), // ← ТОЛЬКО ОДИН jsonEncode!
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Заметки отправлены на сервер')));
       } else {
-        String msg = 'Ошибка отправки: ${res.statusCode}';
+        String errorMsg = 'Ошибка: ${response.statusCode}';
         try {
-          final d = jsonDecode(res.body);
-          msg = d.toString();
+          final body = jsonDecode(response.body);
+          errorMsg = body['detail'] ?? body.toString();
         } catch (_) {}
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(msg)));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMsg)));
       }
+
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка: $e')));
     } finally {
       setState(() => _loading = false);
     }
@@ -475,42 +487,53 @@ class _HomePageState extends State<HomePage> {
         int cntAdded = 0;
         for (final n in notes) {
           final subject = (n['subject'] ?? '').toString();
-          final author = (n['author'] ?? prefs.getString('username') ?? 'Гость')
-              .toString();
-          final uploaded = n['uploaded_at'] is int ? n['uploaded_at'] : DateTime
-              .now()
-              .millisecondsSinceEpoch;
           final deleted = n['deleted'] == true;
-          final text = (n['text'] ?? '')
-              .toString(); // Только чистый текст с сервера
           final id = n['id']?.toString() ?? '';
-          final noteJson = jsonEncode({
-            'id': id,
-            'text': text,
-            'uploaded_at': uploaded,
-            'author': author,
-          });
+
+          if (id.isEmpty) continue;
+
+          final text = (n['text'] ?? '').toString();
+          final uploaded = n['uploaded_at'] is int ? n['uploaded_at'] : DateTime.now().millisecondsSinceEpoch;
+
           final key = 'notes_$subject';
           List<String> list = prefs.getStringList(key) ?? [];
-          // Парсим локальные заметки
-          List<Map<String, dynamic>> localNotes = list.map((s) =>
-          jsonDecode(s) as Map<String, dynamic>).toList();
-          bool exists = false;
-          for (int i = 0; i < localNotes.length; i++) {
-            if (localNotes[i]['id']?.toString() == id) {
-              if (deleted) {
-                list.removeAt(i);
-              } else {
-                list[i] = noteJson;
+
+          // Найдём индекс заметки с таким id (без полного парсинга всех!)
+          int? existingIndex;
+          for (int i = 0; i < list.length; i++) {
+            try {
+              final localNote = jsonDecode(list[i]) as Map<String, dynamic>;
+              if (localNote['id']?.toString() == id) {
+                existingIndex = i;
+                break;
               }
-              exists = true;
-              break;
+            } catch (e) {
+              // Пропускаем битые заметки
+              continue;
             }
           }
-          if (!exists && !deleted) {
-            list.add(noteJson);
-            cntAdded++;
+
+          if (deleted) {
+            if (existingIndex != null) {
+              list.removeAt(existingIndex);
+            }
+          } else {
+            final noteJson = jsonEncode({
+              'id': id,
+              'text': text,
+              'uploaded_at': uploaded,
+              'created_at': n['created_at'] ?? uploaded,
+              'updated_at': n['updated_at'] ?? uploaded,
+              'deleted': false,
+            });
+
+            if (existingIndex != null) {
+              list[existingIndex] = noteJson;
+            } else {
+              list.add(noteJson);
+            }
           }
+
           await prefs.setStringList(key, list);
         }
         final serverTime = data['serverTime'] is int
