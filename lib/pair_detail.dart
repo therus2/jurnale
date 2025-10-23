@@ -4,6 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:uuid/uuid.dart'; // Добавь в pubspec.yaml: uuid: ^4.5.0
+import 'package:http/http.dart' as http; // <<< ДОБАВЬ ЭТО >>>
+
+// ========== Настройки ==========
+// <<< ПЕРЕНОСИМ СЮДА ИЗ main.dart >>>
+const String serverBaseUrl = 'http://127.0.0.1:8000/api'; // <- поменяй при деплое
 
 int getWeekNumber(DateTime date) {
   final firstDayOfYear = DateTime(date.year, 1, 1);
@@ -73,14 +78,29 @@ class _PairDetailPageState extends State<PairDetailPage> {
   TextEditingController ctrl = TextEditingController();
   List<Note> notes = [];
   bool loading = false;
+  bool _userCanDelete = false; // <<< ДОБАВЛЕНО >>>
 
   String _noteKey(String subject) => 'notes_${subject}';
 
   @override
   void initState() {
     super.initState();
+    _loadUserPermissions(); // <<< ВЫЗОВ НОВОЙ ФУНКЦИИ >>>
     loadNotes();
   }
+
+  // <<< НОВАЯ ФУНКЦИЯ: Загрузка прав пользователя >>>
+  Future<void> _loadUserPermissions() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('jwt_token');
+    final userGroup = prefs.getString('user_group') ?? '';
+
+    // Проверяем, есть ли у пользователя право удалять
+    setState(() {
+      _userCanDelete = userGroup == 'teachers' && token != null;
+    });
+  }
+
 
   Future<void> loadNotes() async {
     print('Loading notes for ${widget.pair.subject}');
@@ -144,6 +164,7 @@ class _PairDetailPageState extends State<PairDetailPage> {
   }
 
 
+  // <<< ОРИГИНАЛЬНАЯ ФУНКЦИЯ: Локальное удаление >>>
   Future<void> deleteNoteAt(int index) async {
     print('Deleting note at index: $index');
     try {
@@ -162,6 +183,89 @@ class _PairDetailPageState extends State<PairDetailPage> {
       );
     }
   }
+
+  // <<< НОВАЯ ФУНКЦИЯ: Подтверждение и удаление с сервера >>>
+  Future<void> _confirmAndDeleteNoteFromServer(Note note) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Удалить заметку?'),
+        content: Text('Вы уверены, что хотите удалить эту заметку?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Отмена'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('Да, удалить'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _deleteNoteFromServerAndLocal(note);
+    }
+  }
+
+// <<< НОВАЯ ФУНКЦИЯ: Удаление с сервера и локально >>>
+  Future<void> _deleteNoteFromServerAndLocal(Note note) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('jwt_token');
+    final noteId = note.id;
+
+    if (token == null || noteId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка: токен или ID заметки отсутствует')));
+      return;
+    }
+
+    try {
+      final response = await http.delete(
+        Uri.parse('$serverBaseUrl/notes/$noteId/'), // <<< ОБЯЗАТЕЛЬНО СЛЭШ В КОНЦЕ >>>
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        // Успешно удалено на сервере
+        // Теперь удаляем из SharedPreferences
+        // final subject = note.subject ?? ''; // <-- УДАЛИ ЭТУ СТРОКУ
+        final subject = widget.pair.subject; // <-- ВОЗЬМИ SUBJECT ИЗ PairItem
+        final key = 'notes_$subject';
+        List<String> list = prefs.getStringList(key) ?? [];
+        list.removeWhere((str) {
+          try {
+            final localNote = jsonDecode(str) as Map<String, dynamic>;
+            return localNote['id'] == noteId;
+          } catch (e) {
+            return false; // Игнорируем битые строки
+          }
+        });
+        await prefs.setStringList(key, list);
+
+        // Показываем сообщение
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Заметка удалена с сервера и с телефона'))); // <<< Обновлено сообщение
+
+        // Перерисовать список
+        await loadNotes(); // <-- Обновляем список заметок
+
+      } else {
+        String errorMsg = 'Ошибка: ${response.statusCode}';
+        try {
+          final body = jsonDecode(response.body);
+          errorMsg = body['error'] ?? body.toString();
+        } catch (_) {}
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(errorMsg)));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка соединения: $e')));
+    }
+  }
+
 
   String _formatDateTime(int ms) {
     final dt = DateTime.fromMillisecondsSinceEpoch(ms);
@@ -207,9 +311,20 @@ class _PairDetailPageState extends State<PairDetailPage> {
                           Text('Добавлено на сервер: ${_formatDateTime(note.uploadedAt)}'),
                         ],
                       ),
-                      trailing: IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () => deleteNoteAt(i),
+                      // <<< ИЗМЕНЕНО: trailing >>>
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_userCanDelete) // <<< УСЛОВИЕ: только если может удалять >>>
+                            IconButton(
+                              icon: Icon(Icons.delete, color: Colors.red), // <<< КРАСНЫЙ КРЕСТИК >>>
+                              onPressed: () => _confirmAndDeleteNoteFromServer(note), // <<< НОВАЯ ФУНКЦИЯ >>>
+                            ),
+                          IconButton(
+                            icon: Icon(Icons.delete_forever), // <<< ОРИГИНАЛЬНАЯ ЛОКАЛЬНАЯ КНОПКА >>>
+                            onPressed: () => deleteNoteAt(i), // <<< ОРИГИНАЛЬНАЯ ФУНКЦИЯ >>>
+                          ),
+                        ],
                       ),
                     ),
                   );

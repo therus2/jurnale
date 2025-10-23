@@ -84,6 +84,26 @@ class _HomePageState extends State<HomePage> {
     _determineWeek();
   }
 
+  // Добавь эту функцию в класс _HomePageState
+  Future<void> _fetchUserGroup(SharedPreferences prefs, String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$serverBaseUrl/user/group'), // Используем новый эндпоинт
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final group = data['group'] as String?;
+        // Сохраняем группу пользователя
+        await prefs.setString('user_group', group ?? '');
+      } else {
+        print('Error fetching user group: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching user group: $e');
+    }
+  }
+
   Future<void> _loadToken() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -316,7 +336,8 @@ class _HomePageState extends State<HomePage> {
     try {
       final url = Uri.parse('$serverBaseUrl/login');
       final res = await http.post(
-          url, headers: {'Content-Type': 'application/json'},
+          url,
+          headers: {'Content-Type': 'application/json'},
           body: jsonEncode({'username': username, 'password': password}));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
@@ -324,6 +345,12 @@ class _HomePageState extends State<HomePage> {
         if (token != null) {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('jwt_token', token);
+          await prefs.setString(
+              'username', username); // <<< УБЕДИСЬ, ЧТО ЭТА СТРОКА ЕСТЬ >>>
+
+          // <<< ДОБАВЬ ЭТУ СТРОКУ ТУТ >>>
+          await _fetchUserGroup(prefs, token);
+
           setState(() => _token = token);
           ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Авторизация успешна')));
@@ -385,7 +412,8 @@ class _HomePageState extends State<HomePage> {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('jwt_token');
     if (token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Сначала авторизуйтесь')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Сначала авторизуйтесь')));
       return;
     }
 
@@ -394,7 +422,9 @@ class _HomePageState extends State<HomePage> {
     try {
       final notesToSend = <Map<String, dynamic>>[];
       final username = prefs.getString('username') ?? 'user';
-      final now = DateTime.now().millisecondsSinceEpoch;
+      final now = DateTime
+          .now()
+          .millisecondsSinceEpoch;
 
       // Собираем все заметки из SharedPreferences
       for (final key in prefs.getKeys()) {
@@ -432,7 +462,8 @@ class _HomePageState extends State<HomePage> {
       }
 
       if (notesToSend.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Нет заметок для отправки')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Нет заметок для отправки')));
         return;
       }
 
@@ -447,18 +478,20 @@ class _HomePageState extends State<HomePage> {
       );
 
       if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Заметки отправлены на сервер')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Заметки отправлены на сервер')));
       } else {
         String errorMsg = 'Ошибка: ${response.statusCode}';
         try {
           final body = jsonDecode(response.body);
           errorMsg = body['detail'] ?? body.toString();
         } catch (_) {}
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMsg)));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(errorMsg)));
       }
-
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка: $e')));
     } finally {
       setState(() => _loading = false);
     }
@@ -484,7 +517,10 @@ class _HomePageState extends State<HomePage> {
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         final List<dynamic> notes = data['notes'] ?? [];
-        int cntAdded = 0;
+        int cntAdded = 0; // <-- Счётчик добавленных
+        int cntUpdated = 0; // <-- Счётчик обновлённых
+        int cntDeleted = 0; // <-- Счётчик удалённых
+
         for (final n in notes) {
           final subject = (n['subject'] ?? '').toString();
           final deleted = n['deleted'] == true;
@@ -493,7 +529,9 @@ class _HomePageState extends State<HomePage> {
           if (id.isEmpty) continue;
 
           final text = (n['text'] ?? '').toString();
-          final uploaded = n['uploaded_at'] is int ? n['uploaded_at'] : DateTime.now().millisecondsSinceEpoch;
+          final uploaded = n['uploaded_at'] is int ? n['uploaded_at'] : DateTime
+              .now()
+              .millisecondsSinceEpoch;
 
           final key = 'notes_$subject';
           List<String> list = prefs.getStringList(key) ?? [];
@@ -516,7 +554,9 @@ class _HomePageState extends State<HomePage> {
           if (deleted) {
             if (existingIndex != null) {
               list.removeAt(existingIndex);
+              cntDeleted++; // <-- Увеличиваем счётчик удалённых
             }
+            // Если заметки не было локально, ничего не делаем
           } else {
             final noteJson = jsonEncode({
               'id': id,
@@ -529,8 +569,10 @@ class _HomePageState extends State<HomePage> {
 
             if (existingIndex != null) {
               list[existingIndex] = noteJson;
+              cntUpdated++; // <-- Увеличиваем счётчик обновлённых
             } else {
               list.add(noteJson);
+              cntAdded++; // <-- Увеличиваем счётчик добавленных
             }
           }
 
@@ -543,8 +585,10 @@ class _HomePageState extends State<HomePage> {
             .millisecondsSinceEpoch;
         await prefs.setInt('notes_last_sync', serverTime);
         print('Saved serverTime: $serverTime');
+        // <-- Показываем корректную статистику
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
-            'Получено ${notes.length} записей, добавлено $cntAdded новых')));
+            'Получено ${notes
+                .length} записей, добавлено: $cntAdded, обновлено: $cntUpdated, удалено: $cntDeleted')));
       } else {
         print('Server error: ${res.statusCode}, ${res.body}');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
