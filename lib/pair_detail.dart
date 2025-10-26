@@ -140,7 +140,7 @@ class _PairDetailPageState extends State<PairDetailPage> {
       List<String> saved = await _getSafeNotesList(sp, key);
 
       print('Raw saved notes: $saved');
-      notes = [];
+      List<Note> loadedNotes = [];
       String username = sp.getString('username') ?? 'Гость';
 
       if (saved.isNotEmpty) {
@@ -153,12 +153,12 @@ class _PairDetailPageState extends State<PairDetailPage> {
             if (jsonData['isServer'] == null) {
               jsonData['isServer'] = false;
             }
-            notes.add(Note.fromJson(jsonData));
+            loadedNotes.add(Note.fromJson(jsonData));
           } catch (e) {
             print('Migrating old note: $s, error: $e');
             final parts = s.split(' — ');
             String text = parts.length > 1 ? parts[1].trim() : s.trim();
-            notes.add(Note(
+            loadedNotes.add(Note(
               text: text,
               uploadedAt: DateTime.now().millisecondsSinceEpoch,
               author: username,
@@ -168,12 +168,26 @@ class _PairDetailPageState extends State<PairDetailPage> {
             ));
           }
         }
+
+        // СОРТИРОВКА: по дате в порядке УБЫВАНИЯ (новые сверху)
+        loadedNotes.sort((a, b) => b.uploadedAt.compareTo(a.uploadedAt));
+
         // Сохраняем в правильном формате
-        await sp.setStringList(key, notes.map((n) => jsonEncode(n.toJson())).toList());
+        await sp.setStringList(key, loadedNotes.map((n) => jsonEncode(n.toJson())).toList());
+
+        setState(() {
+          notes = loadedNotes;
+        });
+      } else {
+        setState(() {
+          notes = [];
+        });
       }
     } catch (e) {
       print('Error loading notes: $e');
-      notes = [];
+      setState(() {
+        notes = [];
+      });
     } finally {
       setState(() => loading = false);
       print('Notes loaded: ${notes.length}');
@@ -202,7 +216,7 @@ class _PairDetailPageState extends State<PairDetailPage> {
       saved.add(jsonEncode(newNote.toJson()));
       await sp.setStringList(key, saved);
       ctrl.clear();
-      await loadNotes();
+      await loadNotes(); // Перезагружаем с сортировкой
     } catch (e) {
       print('Error adding note: $e');
     }
@@ -220,7 +234,7 @@ class _PairDetailPageState extends State<PairDetailPage> {
       if (index < saved.length) {
         saved.removeAt(index);
         await sp.setStringList(key, saved);
-        await loadNotes();
+        await loadNotes(); // Перезагружаем с сортировкой
       }
     } catch (e) {
       print('Error deleting note: $e');
@@ -291,7 +305,7 @@ class _PairDetailPageState extends State<PairDetailPage> {
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Заметка удалена с сервера и с телефона')));
 
-        await loadNotes();
+        await loadNotes(); // Перезагружаем с сортировкой
       } else {
         String errorMsg = 'Ошибка: ${response.statusCode}';
         try {
@@ -342,14 +356,27 @@ class _PairDetailPageState extends State<PairDetailPage> {
                   final note = notes[i];
                   return Card(
                     color: Color.fromARGB(255, 234, 228, 255),
+                    margin: EdgeInsets.only(bottom: 8), // Добавляем отступ между карточками
                     child: ListTile(
-                      title: Text(note.text),
+                      title: Text(
+                        note.text,
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                      ),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          SizedBox(height: 4),
                           Text('Автор: ${note.author}'),
+                          SizedBox(height: 2),
                           Text('Добавлено: ${_formatDateTime(note.uploadedAt)}'),
-                          Text('Тип: ${note.isServer ? "Серверная" : "Локальная"}'),
+                          SizedBox(height: 2),
+                          Text(
+                            'Тип: ${note.isServer ? "Серверная" : "Локальная"}',
+                            style: TextStyle(
+                              color: note.isServer ? Colors.green : Colors.blue,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ],
                       ),
                       trailing: Row(
@@ -361,7 +388,7 @@ class _PairDetailPageState extends State<PairDetailPage> {
                               onPressed: () => _confirmAndDeleteNoteFromServer(note),
                             ),
                           IconButton(
-                            icon: Icon(Icons.delete_forever),
+                            icon: Icon(Icons.delete_forever, color: Colors.grey),
                             onPressed: () => deleteNoteAt(i),
                           ),
                         ],

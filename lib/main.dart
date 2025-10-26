@@ -409,6 +409,38 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // ======= Сортировка заметок по дате (новые сверху) =======
+  Future<void> _sortNotesByDate(SharedPreferences prefs, String key) async {
+    try {
+      List<String> notes = await _getSafeNotesList(prefs, key);
+      if (notes.isNotEmpty) {
+        // Преобразуем в объекты Note для сортировки
+        List<Map<String, dynamic>> noteObjects = [];
+        for (String noteStr in notes) {
+          try {
+            Map<String, dynamic> noteMap = jsonDecode(noteStr);
+            noteObjects.add(noteMap);
+          } catch (e) {
+            print('Error parsing note for sorting: $e');
+          }
+        }
+
+        // Сортируем по uploadedAt в порядке убывания (новые сверху)
+        noteObjects.sort((a, b) {
+          int timeA = a['uploaded_at'] is int ? a['uploaded_at'] : 0;
+          int timeB = b['uploaded_at'] is int ? b['uploaded_at'] : 0;
+          return timeB.compareTo(timeA);
+        });
+
+        // Преобразуем обратно в JSON строки
+        List<String> sortedNotes = noteObjects.map((note) => jsonEncode(note)).toList();
+        await prefs.setStringList(key, sortedNotes);
+      }
+    } catch (e) {
+      print('Error sorting notes: $e');
+    }
+  }
+
   // ======= Отправка локальных заметок на сервер =======
   Future<void> _sendLocalNotes() async {
     final prefs = await SharedPreferences.getInstance();
@@ -563,8 +595,11 @@ class _HomePageState extends State<HomePage> {
             cntAdded++;
           }
 
-          // Безопасное сохранение
+          // Сохраняем обновленный список
           await prefs.setStringList(key, list);
+
+          // СОРТИРУЕМ заметки по дате после добавления/обновления
+          await _sortNotesByDate(prefs, key);
         }
 
         final serverTime = responseData['serverTime'] is int
