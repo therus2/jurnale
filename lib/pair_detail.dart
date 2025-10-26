@@ -42,18 +42,30 @@ class PairItem {
   }
 }
 
+// <<< ИЗМЕНЁННЫЙ КЛАСС NOTE >>>
 class Note {
   final String text;
   final int uploadedAt;
   final String author;
-  final String? id; // Добавили id
+  final String? id;
+  final String subject; // <<< НОВОЕ ПОЛЕ (для миграции и синхронизации) >>>
+  final bool isServer; // <<< НОВОЕ ПОЛЕ >>>
 
-  Note({required this.text, required this.uploadedAt, required this.author, this.id});
+  Note({
+    required this.text,
+    required this.uploadedAt,
+    required this.author,
+    required this.subject, // <<< Обязательно добавь сюда >>>
+    required this.isServer, // <<< Обязательно добавь сюда >>>
+    this.id,
+  });
 
   Map<String, dynamic> toJson() => {
     'text': text,
     'uploaded_at': uploadedAt,
     'author': author,
+    'subject': subject, // <<< Добавь в JSON >>>
+    'isServer': isServer, // <<< Добавь в JSON >>>
     'id': id,
   };
 
@@ -61,6 +73,8 @@ class Note {
     text: json['text']?.toString() ?? '',
     uploadedAt: json['uploaded_at'] is int ? json['uploaded_at'] : DateTime.now().millisecondsSinceEpoch,
     author: json['author']?.toString() ?? 'Unknown',
+    subject: json['subject']?.toString() ?? '', // <<< НОВОЕ ПОЛЕ >>>
+    isServer: json['isServer'] == true, // <<< НОВОЕ ПОЛЕ: по умолчанию false, если не указано >>>
     id: json['id']?.toString(),
   );
 }
@@ -116,9 +130,16 @@ class _PairDetailPageState extends State<PairDetailPage> {
         for (var s in saved) {
           try {
             var json = jsonDecode(s);
+            // <<< МИГРАЦИЯ: Добавляем subject и isServer, если их нет >>>
+            if (json['subject'] == null) {
+              json['subject'] = widget.pair.subject;
+            }
+            if (json['isServer'] == null) {
+              json['isServer'] = false; // Считаем, что старые заметки — локальные
+            }
             notes.add(Note.fromJson(json));
           } catch (e) {
-            // Миграция старого формата
+            // Миграция старого формата (если jsonDecode не сработает)
             print('Migrating old note: $s, error: $e');
             final parts = s.split(' — ');
             String text = parts.length > 1 ? parts[1].trim() : s.trim();
@@ -126,10 +147,13 @@ class _PairDetailPageState extends State<PairDetailPage> {
               text: text,
               uploadedAt: DateTime.now().millisecondsSinceEpoch,
               author: username,  // Реальный username
+              subject: widget.pair.subject, // <<< Добавь subject >>>
+              isServer: false, // <<< Новая мигрированная заметка — локальная >>>
               id: Uuid().v4(),
             ));
           }
         }
+        // <<< СОХРАНЯЕМ ОБНОВЛЁННЫЙ ФОРМАТ >>>
         await sp.setStringList(key, notes.map((n) => jsonEncode(n.toJson())).toList());
       }
     } catch (e) {
@@ -140,6 +164,7 @@ class _PairDetailPageState extends State<PairDetailPage> {
     }
   }
 
+  // <<< ИЗМЕНЁННАЯ ФУНКЦИЯ addNote >>>
   Future<void> addNote() async {
     String text = ctrl.text.trim();
     if (text.isEmpty) return;
@@ -147,11 +172,13 @@ class _PairDetailPageState extends State<PairDetailPage> {
       SharedPreferences sp = await SharedPreferences.getInstance();
       String key = _noteKey(widget.pair.subject);
       List<String> saved = sp.getStringList(key) ?? [];
-      String username = sp.getString('username') ?? 'Гость';  // Реальный username
+      String username = sp.getString('username') ?? 'Гость';
       Note newNote = Note(
         text: text,
         uploadedAt: DateTime.now().millisecondsSinceEpoch,
         author: username,
+        subject: widget.pair.subject, // <<< Добавь subject >>>
+        isServer: false, // <<< ВАЖНО: новая заметка — локальная >>>
         id: Uuid().v4(),
       );
       saved.add(jsonEncode(newNote.toJson()));
@@ -309,6 +336,7 @@ class _PairDetailPageState extends State<PairDetailPage> {
                         children: [
                           Text('Автор: ${note.author}'),
                           Text('Добавлено на сервер: ${_formatDateTime(note.uploadedAt)}'),
+                          Text('Тип: ${note.isServer ? "Серверная" : "Локальная"}'), // <<< ДОБАВЛЕНО: Показ типа заметки >>>
                         ],
                       ),
                       // <<< ИЗМЕНЕНО: trailing >>>

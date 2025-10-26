@@ -40,7 +40,6 @@ String _randomClientId() {
   return '${DateTime.now().millisecondsSinceEpoch}_$randPart';
 }
 
-
 // ======= Приложение =======
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -71,9 +70,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String weekType = '';
   String todayName = '';
-  int todayWeekday = DateTime
-      .now()
-      .weekday;
+  int todayWeekday = DateTime.now().weekday;
   String? _token;
   bool _loading = false;
 
@@ -82,26 +79,6 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _loadToken();
     _determineWeek();
-  }
-
-  // Добавь эту функцию в класс _HomePageState
-  Future<void> _fetchUserGroup(SharedPreferences prefs, String token) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$serverBaseUrl/user/group'), // Используем новый эндпоинт
-        headers: {'Authorization': 'Bearer $token'},
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final group = data['group'] as String?;
-        // Сохраняем группу пользователя
-        await prefs.setString('user_group', group ?? '');
-      } else {
-        print('Error fetching user group: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error fetching user group: $e');
-    }
   }
 
   Future<void> _loadToken() async {
@@ -205,6 +182,12 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.sync),
             onPressed: _fetchUpdates,
           ),
+          // <<< НОВАЯ КНОПКА СИНХРОНИЗАЦИИ >>>
+          // IconButton(
+          //   tooltip: 'Синхронизировать заметки с сервера (удалить старые серверные, загрузить новые)',
+          //   icon: const Icon(Icons.refresh), // <<< Новая иконка >>>
+          //   onPressed: _token != null ? _syncServerNotes : null, // <<< Вызов новой функции >>>
+          // ),
           IconButton(
             tooltip: 'Отправить мои заметки (клиент → сервер)',
             icon: const Icon(Icons.cloud_upload),
@@ -225,7 +208,8 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   ListTile(
                     title: Text(weekType,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold)),
                     subtitle: Text('Сегодня: $todayName'),
                   ),
                   Row(
@@ -278,7 +262,8 @@ class _HomePageState extends State<HomePage> {
     return ElevatedButton(
       onPressed: () {
         HapticFeedback.lightImpact();
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => page));
       },
       style: ButtonStyle(
         backgroundColor: MaterialStateProperty.all(
@@ -298,45 +283,48 @@ class _HomePageState extends State<HomePage> {
 
     await showDialog(
       context: context,
-      builder: (ctx) =>
-          AlertDialog(
-            title: const Text('Вход'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(controller: usernameCtrl,
-                    decoration: const InputDecoration(labelText: 'username')),
-                TextField(controller: passwordCtrl,
-                    decoration: const InputDecoration(labelText: 'password'),
-                    obscureText: true),
-              ],
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text('Отмена')),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  _login(usernameCtrl.text.trim(), passwordCtrl.text.trim());
-                },
-                child: const Text('Войти'),
-              ),
-            ],
+      builder: (ctx) => AlertDialog(
+        title: const Text('Вход'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+                controller: usernameCtrl,
+                decoration:
+                const InputDecoration(labelText: 'username')),
+            TextField(
+                controller: passwordCtrl,
+                decoration:
+                const InputDecoration(labelText: 'password'),
+                obscureText: true),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Отмена')),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _login(usernameCtrl.text.trim(), passwordCtrl.text.trim());
+            },
+            child: const Text('Войти'),
           ),
+        ],
+      ),
     );
   }
 
   Future<void> _login(String username, String password) async {
     if (username.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Введите username и password')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Введите username и password')));
       return;
     }
     setState(() => _loading = true);
     try {
       final url = Uri.parse('$serverBaseUrl/login');
-      final res = await http.post(
-          url,
+      final res = await http.post(url,
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({'username': username, 'password': password}));
       if (res.statusCode == 200) {
@@ -345,34 +333,49 @@ class _HomePageState extends State<HomePage> {
         if (token != null) {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('jwt_token', token);
-          await prefs.setString(
-              'username', username); // <<< УБЕДИСЬ, ЧТО ЭТА СТРОКА ЕСТЬ >>>
-
-          // <<< ДОБАВЬ ЭТУ СТРОКУ ТУТ >>>
+          await prefs.setString('username', username); // <<< Сохраняем username >>>
+          // <<< ДОБАВЛЕНО: Загрузка группы пользователя >>>
           await _fetchUserGroup(prefs, token);
-
           setState(() => _token = token);
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Авторизация успешна')));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Авторизация успешна')));
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Токен не найден в ответе')));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Токен не найден в ответе')));
         }
       } else {
         String msg = 'Ошибка входа';
         try {
           final err = jsonDecode(res.body);
-          msg =
-          (err is Map && err['detail'] != null) ? err['detail'] : res.body;
+          msg = (err is Map && err['detail'] != null) ? err['detail'] : res.body;
         } catch (_) {}
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(msg)));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Ошибка: $e')));
     } finally {
       setState(() => _loading = false);
+    }
+  }
+
+  // <<< НОВАЯ ФУНКЦИЯ: Получение группы пользователя >>>
+  Future<void> _fetchUserGroup(SharedPreferences prefs, String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$serverBaseUrl/user/group'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final group = data['group'] as String?;
+        if (group != null) {
+          await prefs.setString('user_group', group);
+        }
+      }
+    } catch (e) {
+      print('Error fetching user group: $e');
     }
   }
 
@@ -393,13 +396,9 @@ class _HomePageState extends State<HomePage> {
             'id': null, // просим сервер сгенерировать id
             'subject': subject,
             'text': text,
-            'created_at': DateTime
-                .now()
-                .millisecondsSinceEpoch,
-            'updated_at': DateTime
-                .now()
-                .millisecondsSinceEpoch,
-            'deleted': false
+            'created_at': DateTime.now().millisecondsSinceEpoch,
+            'updated_at': DateTime.now().millisecondsSinceEpoch,
+            'deleted': false // <<< УБРАНО из модели Django >>>
           });
         }
       }
@@ -412,126 +411,113 @@ class _HomePageState extends State<HomePage> {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('jwt_token');
     if (token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Сначала авторизуйтесь')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Сначала авторизуйтесь')));
       return;
     }
-
     setState(() => _loading = true);
-
     try {
-      final notesToSend = <Map<String, dynamic>>[];
-      final username = prefs.getString('username') ?? 'user';
-      final now = DateTime
-          .now()
-          .millisecondsSinceEpoch;
-
-      // Собираем все заметки из SharedPreferences
-      for (final key in prefs.getKeys()) {
-        if (key.startsWith('notes_')) {
-          final subject = key.substring('notes_'.length);
-          final savedNotes = prefs.getStringList(key) ?? [];
-          for (final noteStr in savedNotes) {
+      List<Map<String, dynamic>> notes = [];
+      // Собираем все заметки из prefs
+      Set<String> subjects = prefs.getKeys().where((k) => k.startsWith('notes_')).toSet();
+      String username = prefs.getString('username') ?? 'Гость';
+      int now = DateTime.now().millisecondsSinceEpoch;
+      for (String key in subjects) {
+        List<String>? saved = prefs.getStringList(key);
+        if (saved != null) {
+          for (String s in saved) {
             try {
-              // noteStr — это JSON-строка, сохранённая ранее
-              final noteMap = jsonDecode(noteStr) as Map<String, dynamic>;
+              var json = jsonDecode(s);
+              String text = json['text'] ?? '';
+              String id = json['id'] ?? Uuid().v4();
 
-              final rawId = noteMap['id'];
-              String id;
-              if (rawId is String && rawId.isNotEmpty) {
-                id = rawId;
-              } else {
-                id = const Uuid().v4();
+              // <<< ПРОВЕРКА: отправляем ТОЛЬКО если isServer = false >>>
+              if (json['isServer'] == true) {
+                continue; // Пропускаем заметки, которые уже на сервере
               }
 
-              // Формируем чистый объект для отправки
-              notesToSend.add({
+              // <<< ДОБАВЛЯЕМ isServer в отправляемые данные (опционально, сервер игнорирует) >>>
+              notes.add({
                 'id': id,
-                'subject': subject,
-                'text': noteMap['text'] ?? '',
-                'created_at': noteMap['created_at'] ?? now,
-                'updated_at': noteMap['updated_at'] ?? now,
-                'uploaded_at': noteMap['uploaded_at'] ?? now,
-                'deleted': noteMap['deleted'] ?? false,
+                'client_id': _randomClientId(),
+                'subject': key.replaceFirst('notes_', ''),
+                'text': text, // Только чистый текст
+                'author': username,
+                'uploaded_at': json['uploaded_at'] ?? now,
+                'isServer': json['isServer'] == true, // <<< ДОБАВЬ ЭТО >>>
+                'created_at': json['created_at'] ?? now,
+                'updated_at': json['updated_at'] ?? now,
+                'deleted': false, // <<< УБРАНО из модели Django >>>
               });
             } catch (e) {
-              print('Ошибка парсинга заметки: $e');
+              print('Error parsing local note: $e');
             }
           }
         }
       }
-
-      if (notesToSend.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Нет заметок для отправки')));
+      if (notes.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Нет локальных заметок для отправки')));
         return;
       }
-
-      // 🔥 ОТПРАВКА: ОДИН раз кодируем в JSON
-      final response = await http.post(
-        Uri.parse('$serverBaseUrl/notes/sync'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({'notes': notesToSend}), // ← ТОЛЬКО ОДИН jsonEncode!
-      );
-
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Заметки отправлены на сервер')));
+      final url = Uri.parse('$serverBaseUrl/notes/sync');
+      final res = await http.post(url, headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token'
+      }, body: jsonEncode({'notes': notes}));
+      if (res.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Локальные заметки отправлены на сервер')));
       } else {
-        String errorMsg = 'Ошибка: ${response.statusCode}';
+        String msg = 'Ошибка отправки: ${res.statusCode}';
         try {
-          final body = jsonDecode(response.body);
-          errorMsg = body['detail'] ?? body.toString();
+          final d = jsonDecode(res.body);
+          msg = d.toString();
         } catch (_) {}
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(errorMsg)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(msg)));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Ошибка: $e')));
     } finally {
       setState(() => _loading = false);
     }
   }
 
-// ======= Получение обновлений с сервера и merge в локальные заметки =======
+  // ======= Получение обновлений с сервера и merge в локальные заметки =======
   Future<void> _fetchUpdates() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('jwt_token');
     if (token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Сначала авторизуйтесь')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Сначала авторизуйтесь')));
       return;
     }
     setState(() => _loading = true);
     try {
-      final since = prefs.getInt('notes_last_sync') ?? 0;
+      // final since = prefs.getInt('notes_last_sync') ?? 0; // <<< БЫЛО >>>
+      int since = 0; // <<< СТАЛО: для синхронизации можно получать всё >>>>
       print('Fetching updates with since=$since');
       final url = Uri.parse('$serverBaseUrl/notes/updates?since=$since');
-      final res = await http.get(
-          url, headers: {'Authorization': 'Bearer $token'});
+      final res = await http.get(url, headers: {'Authorization': 'Bearer $token'});
       print('Server response: ${res.body}');
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         final List<dynamic> notes = data['notes'] ?? [];
-        int cntAdded = 0; // <-- Счётчик добавленных
-        int cntUpdated = 0; // <-- Счётчик обновлённых
-        int cntDeleted = 0; // <-- Счётчик удалённых
+        int cntAdded = 0;
+        int cntUpdated = 0;
+        int cntDeleted = 0; // <<< УБРАНО: мягкое удаление >>>
 
         for (final n in notes) {
           final subject = (n['subject'] ?? '').toString();
-          final deleted = n['deleted'] == true;
+          // final deleted = n['deleted'] == true; // <<< УБРАНО: мягкое удаление >>>
           final id = n['id']?.toString() ?? '';
 
           if (id.isEmpty) continue;
 
           final text = (n['text'] ?? '').toString();
-          final uploaded = n['uploaded_at'] is int ? n['uploaded_at'] : DateTime
-              .now()
-              .millisecondsSinceEpoch;
+          final uploaded = n['uploaded_at'] is int ? n['uploaded_at'] : DateTime.now().millisecondsSinceEpoch;
 
           final key = 'notes_$subject';
           List<String> list = prefs.getStringList(key) ?? [];
@@ -551,44 +537,35 @@ class _HomePageState extends State<HomePage> {
             }
           }
 
-          if (deleted) {
-            if (existingIndex != null) {
-              list.removeAt(existingIndex);
-              cntDeleted++; // <-- Увеличиваем счётчик удалённых
-            }
-            // Если заметки не было локально, ничего не делаем
+          // <<< ИЗМЕНЕНО: НЕТ deleted >>>
+          final noteJson = jsonEncode({
+            'id': id,
+            'text': text,
+            'uploaded_at': uploaded,
+            'author': n['author']?.toString() ?? 'Unknown', // <<< Добавлено: author >>>
+            'subject': subject, // <<< Добавлено: subject >>>
+            'isServer': true, // <<< ВАЖНО: заметка с сервера >>>
+            'created_at': n['created_at'] ?? uploaded,
+            'updated_at': n['updated_at'] ?? uploaded,
+            // 'deleted': false, // <<< УБРАНО >>>
+          });
+
+          if (existingIndex != null) {
+            list[existingIndex] = noteJson;
+            cntUpdated++;
           } else {
-            final noteJson = jsonEncode({
-              'id': id,
-              'text': text,
-              'uploaded_at': uploaded,
-              'created_at': n['created_at'] ?? uploaded,
-              'updated_at': n['updated_at'] ?? uploaded,
-              'deleted': false,
-            });
-
-            if (existingIndex != null) {
-              list[existingIndex] = noteJson;
-              cntUpdated++; // <-- Увеличиваем счётчик обновлённых
-            } else {
-              list.add(noteJson);
-              cntAdded++; // <-- Увеличиваем счётчик добавленных
-            }
+            list.add(noteJson);
+            cntAdded++;
           }
-
           await prefs.setStringList(key, list);
         }
         final serverTime = data['serverTime'] is int
             ? data['serverTime']
-            : DateTime
-            .now()
-            .millisecondsSinceEpoch;
+            : DateTime.now().millisecondsSinceEpoch;
         await prefs.setInt('notes_last_sync', serverTime);
         print('Saved serverTime: $serverTime');
-        // <-- Показываем корректную статистику
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
-            'Получено ${notes
-                .length} записей, добавлено: $cntAdded, обновлено: $cntUpdated, удалено: $cntDeleted')));
+            'Получено ${notes.length} записей, добавлено: $cntAdded, обновлено: $cntUpdated, удалено: $cntDeleted')));
       } else {
         print('Server error: ${res.statusCode}, ${res.body}');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -596,8 +573,65 @@ class _HomePageState extends State<HomePage> {
       }
     } catch (e) {
       print('Fetch updates error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Ошибка: $e')));
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  // ======= Функция синхронизации: удалить серверные, загрузить новые =======
+  Future<void> _syncServerNotes() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('jwt_token');
+    if (token == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Сначала авторизуйтесь')));
+      return;
+    }
+    setState(() => _loading = true);
+
+    try {
+      // Получаем все ключи SharedPreferences, начинающиеся на 'notes_'
+      final keys = prefs.getKeys().where((k) => k.startsWith('notes_')).toList();
+
+      for (final key in keys) {
+        // Убедимся, что мы читаем список строк
+        List<String> list = prefs.getStringList(key) ?? [];
+        List<String> updatedList = [];
+
+        for (final noteStr in list) {
+          try {
+            final noteMap = jsonDecode(noteStr) as Map<String, dynamic>;
+            final isServer = noteMap['isServer'] == true; // <<< Проверяем поле >>>
+
+            if (isServer) {
+              // Заметка с сервера — её нужно удалить
+              continue; // Пропускаем, не добавляем в updatedList
+            } else {
+              // Заметка локальная — оставляем
+              updatedList.add(noteStr);
+            }
+          } catch (e) {
+            // Если формат битый — оставляем как есть
+            updatedList.add(noteStr);
+          }
+        }
+
+        // Сохраняем обновлённый список (без заметок с isServer = true)
+        await prefs.setStringList(key, updatedList);
+      }
+
+      // Теперь запрашиваем обновления с сервера (как в _fetchUpdates)
+      await _fetchUpdates();
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Синхронизация завершена')));
+
+    } catch (e) {
+      print('Sync error: $e');
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Ошибка синхронизации: $e')));
     } finally {
       setState(() => _loading = false);
     }
