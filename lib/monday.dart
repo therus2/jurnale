@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle, HapticFeedback;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'pair_detail.dart'; // <<< ИМПОРТИРУЕМ PairItem ИЗ pair_detail.dart >>>
-
-// <<< УБРАНО: class PairItem {...} (теперь используется из pair_detail.dart) >>>
-
-// <<< УБРАНО: int getWeekNumber(...) (теперь используется из main.dart или вынести в отдельный файл) >>>
+import 'pair_detail.dart';
+import 'dart:math' as math;
 
 class DayScreen extends StatefulWidget {
   @override
@@ -24,64 +21,81 @@ class _DayScreenState extends State<DayScreen> {
     loadDay();
   }
 
-  // <<< ИСПРАВЛЕННАЯ И ОБНОВЛЁННАЯ ФУНКЦИЯ loadDay() >>>
   Future<void> loadDay() async {
-    print('=== loadDay() called ==='); // <-- Отладка
+    print('=== loadDay() called ===');
     setState(() => loading = true);
 
     try {
-      // Загружаем raw JSON строку
       String raw = await rootBundle.loadString(filename);
-      print('File loaded, length: ${raw.length}'); // <-- Отладка
-      // print('File content: $raw'); // <-- Закомментировано, чтобы не засорять лог
+      print('File loaded, length: ${raw.length}');
 
-      // Декодируем в List
-      List<dynamic> arr = json.decode(raw);
-      print('Decoded array type: ${arr.runtimeType}'); // <-- Отладка
-      print('Decoded array length: ${arr.length}'); // <-- Отладка
-      // print('Decoded array: $arr'); // <-- Закомментировано, чтобы не засорять лог
+      // КРИТИЧЕСКАЯ ПРОВЕРКА: убедимся, что это не число
+      if (raw.trim().isEmpty) {
+        print('File is empty');
+        pairs = [];
+        return;
+      }
 
-      // Получаем тип недели
+      // ПРОВЕРКА: если это число, выбросим ошибку
+      if (int.tryParse(raw.trim()) != null) {
+        throw Exception('File contains number instead of JSON: $raw');
+      }
+
+      dynamic decoded = json.decode(raw);
+      print('Decoded type: ${decoded.runtimeType}');
+
+      // КРИТИЧЕСКАЯ ПРОВЕРКА: что декодированный объект - список
+      if (decoded is! List) {
+        throw Exception('Expected List but got: ${decoded.runtimeType}');
+      }
+
+      List<dynamic> arr = decoded;
+      print('Decoded array length: ${arr.length}');
+
       DateTime today = DateTime.now();
-      int weekOfYear = getWeekNumber(today); // <-- Убедись, что getWeekNumber доступна
+      int weekOfYear = getWeekNumber(today);
       String weekType = (weekOfYear % 2 == 0) ? 'even' : 'odd';
-      print('Current week type: $weekType'); // <-- Отладка
+      print('Current week type: $weekType');
 
-      // Получаем номер группы
       SharedPreferences sp = await SharedPreferences.getInstance();
       int group = sp.getInt('groupNumber') ?? 1;
-      print('User group number: $group'); // <-- Отладка
+      print('User group number: $group');
 
-      // Фильтруем пары по неделе и группе
       pairs = arr
-          .map((e) => PairItem.fromMap(e))
+          .map((e) {
+        try {
+          return PairItem.fromMap(e);
+        } catch (e) {
+          print('Error creating PairItem from map: $e');
+          return null;
+        }
+      })
+          .where((p) => p != null)
+          .cast<PairItem>()
           .where((p) {
         bool weekMatch = (p.week == 'both' || p.week == weekType);
         bool groupMatch = (p.group == 'both' || p.group == group.toString());
         bool matches = weekMatch && groupMatch;
-        print('Pair: ${p.subject}, Week: ${p.week}, Group: ${p.group}, Matches: $matches'); // <-- Отладка
         return matches;
       })
           .toList();
 
-      print('Filtered pairs count: ${pairs.length}'); // <-- Отладка
+      print('Filtered pairs count: ${pairs.length}');
 
     } catch (e) {
-      print('Error in loadDay: $e'); // <-- Отладка
-      pairs = []; // На случай ошибки
+      print('Error in loadDay: $e');
+      pairs = [];
     }
 
-    // Один вызов setState в конце
     setState(() {
       loading = false;
     });
   }
 
-
   void openPair(PairItem p) async {
     await Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => PairDetailPage(pair: p, dayFile: 'monday.json')));
-    await loadDay(); // Перезагружаем расписание после возврата из заметок
+    await loadDay();
   }
 
   @override
@@ -115,4 +129,9 @@ class _DayScreenState extends State<DayScreen> {
   }
 }
 
-// <<< УБРАНО: int getWeekNumber(...) (теперь должно быть в main.dart или общем файле) >>>
+// Добавьте функцию getWeekNumber если её нет в импортированных файлах
+int getWeekNumber(DateTime date) {
+  final firstDayOfYear = DateTime(date.year, 1, 1);
+  final daysOffset = date.difference(firstDayOfYear).inDays;
+  return ((daysOffset + firstDayOfYear.weekday) / 7).ceil();
+}

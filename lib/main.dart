@@ -19,7 +19,7 @@ import 'saturday.dart' as saturday;
 import 'sunday.dart' as sunday;
 
 // ========== Настройки ==========
-const String serverBaseUrl = 'http://127.0.0.1:8000/api'; // <- поменяй при деплое
+const String serverBaseUrl = 'http://127.0.0.1:8000/api';
 
 // ======= Вспомогательные функции =======
 int getWeekNumber(DateTime date) {
@@ -35,8 +35,7 @@ String _fmtDateMs(int ms) {
 
 String _randomClientId() {
   final r = Random();
-  // генерируем случайное число от 0 до 2^32 - 1, но гарантируем max > 0
-  final randPart = r.nextInt(1 << 31); // было 1 << 32, теперь 1 << 31 (всё ок)
+  final randPart = r.nextInt(1 << 31);
   return '${DateTime.now().millisecondsSinceEpoch}_$randPart';
 }
 
@@ -79,6 +78,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _loadToken();
     _determineWeek();
+    _repairCorruptedData();
   }
 
   Future<void> _loadToken() async {
@@ -182,12 +182,11 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.sync),
             onPressed: _fetchUpdates,
           ),
-          // <<< НОВАЯ КНОПКА СИНХРОНИЗАЦИИ >>>
-          // IconButton(
-          //   tooltip: 'Синхронизировать заметки с сервера (удалить старые серверные, загрузить новые)',
-          //   icon: const Icon(Icons.refresh), // <<< Новая иконка >>>
-          //   onPressed: _token != null ? _syncServerNotes : null, // <<< Вызов новой функции >>>
-          // ),
+          IconButton(
+            tooltip: 'Синхронизировать заметки с сервера',
+            icon: const Icon(Icons.refresh),
+            onPressed: _token != null ? _syncServerNotes : null,
+          ),
           IconButton(
             tooltip: 'Отправить мои заметки (клиент → сервер)',
             icon: const Icon(Icons.cloud_upload),
@@ -333,8 +332,7 @@ class _HomePageState extends State<HomePage> {
         if (token != null) {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('jwt_token', token);
-          await prefs.setString('username', username); // <<< Сохраняем username >>>
-          // <<< ДОБАВЛЕНО: Загрузка группы пользователя >>>
+          await prefs.setString('username', username);
           await _fetchUserGroup(prefs, token);
           setState(() => _token = token);
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -349,8 +347,8 @@ class _HomePageState extends State<HomePage> {
           final err = jsonDecode(res.body);
           msg = (err is Map && err['detail'] != null) ? err['detail'] : res.body;
         } catch (_) {}
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(msg)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(msg)));
       }
     } catch (e) {
       ScaffoldMessenger.of(context)
@@ -360,7 +358,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // <<< НОВАЯ ФУНКЦИЯ: Получение группы пользователя >>>
   Future<void> _fetchUserGroup(SharedPreferences prefs, String token) async {
     try {
       final response = await http.get(
@@ -379,31 +376,37 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // ======= Сбор локальных заметок из SharedPreferences для отправки =======
-  Future<List<Map<String, dynamic>>> _collectLocalNotesForSync() async {
+  // ======= Восстановление поврежденных данных =======
+  Future<void> _repairCorruptedData() async {
     final prefs = await SharedPreferences.getInstance();
-    final keys = prefs.getKeys();
-    final notes = <Map<String, dynamic>>[];
-    for (final k in keys) {
-      if (k.startsWith('notes_')) {
-        final subject = k.substring('notes_'.length);
-        final list = prefs.getStringList(k) ?? [];
-        for (final text in list) {
-          // Каждая локальная заметка — формируем объект для отправки
-          // создаём уникальный client_id
-          notes.add({
-            'client_id': _randomClientId(),
-            'id': null, // просим сервер сгенерировать id
-            'subject': subject,
-            'text': text,
-            'created_at': DateTime.now().millisecondsSinceEpoch,
-            'updated_at': DateTime.now().millisecondsSinceEpoch,
-            'deleted': false // <<< УБРАНО из модели Django >>>
-          });
-        }
+    final keys = prefs.getKeys().where((k) => k.startsWith('notes_')).toList();
+    print('Checking for corrupted data in ${keys.length} keys');
+
+    for (final key in keys) {
+      final data = prefs.get(key);
+      if (data is! List<String>) {
+        print('Repairing corrupted key: $key, type: ${data.runtimeType}');
+        await prefs.remove(key);
       }
     }
-    return notes;
+  }
+
+  // ======= Безопасное получение заметок из SharedPreferences =======
+  Future<List<String>> _getSafeNotesList(SharedPreferences prefs, String key) async {
+    try {
+      final data = prefs.get(key);
+      if (data is List<String>) {
+        return data;
+      } else {
+        print('Invalid data type for key $key: ${data.runtimeType}');
+        await prefs.remove(key);
+        return [];
+      }
+    } catch (e) {
+      print('Error reading notes for key $key: $e');
+      await prefs.remove(key);
+      return [];
+    }
   }
 
   // ======= Отправка локальных заметок на сервер =======
@@ -418,53 +421,54 @@ class _HomePageState extends State<HomePage> {
     setState(() => _loading = true);
     try {
       List<Map<String, dynamic>> notes = [];
-      // Собираем все заметки из prefs
-      Set<String> subjects = prefs.getKeys().where((k) => k.startsWith('notes_')).toSet();
+      final keys = prefs.getKeys().where((k) => k.startsWith('notes_')).toList();
       String username = prefs.getString('username') ?? 'Гость';
       int now = DateTime.now().millisecondsSinceEpoch;
-      for (String key in subjects) {
-        List<String>? saved = prefs.getStringList(key);
-        if (saved != null) {
-          for (String s in saved) {
-            try {
-              var json = jsonDecode(s);
-              String text = json['text'] ?? '';
-              String id = json['id'] ?? Uuid().v4();
 
-              // <<< ПРОВЕРКА: отправляем ТОЛЬКО если isServer = false >>>
-              if (json['isServer'] == true) {
-                continue; // Пропускаем заметки, которые уже на сервере
-              }
+      for (String key in keys) {
+        // Используем безопасное получение данных
+        List<String> saved = await _getSafeNotesList(prefs, key);
 
-              // <<< ДОБАВЛЯЕМ isServer в отправляемые данные (опционально, сервер игнорирует) >>>
-              notes.add({
-                'id': id,
-                'client_id': _randomClientId(),
-                'subject': key.replaceFirst('notes_', ''),
-                'text': text, // Только чистый текст
-                'author': username,
-                'uploaded_at': json['uploaded_at'] ?? now,
-                'isServer': json['isServer'] == true, // <<< ДОБАВЬ ЭТО >>>
-                'created_at': json['created_at'] ?? now,
-                'updated_at': json['updated_at'] ?? now,
-                'deleted': false, // <<< УБРАНО из модели Django >>>
-              });
-            } catch (e) {
-              print('Error parsing local note: $e');
+        for (String s in saved) {
+          try {
+            var jsonData = jsonDecode(s);
+            String text = jsonData['text'] ?? '';
+            String id = jsonData['id'] ?? Uuid().v4();
+
+            if (jsonData['isServer'] == true) {
+              continue;
             }
+
+            notes.add({
+              'id': id,
+              'client_id': _randomClientId(),
+              'subject': key.replaceFirst('notes_', ''),
+              'text': text,
+              'author': username,
+              'uploaded_at': jsonData['uploaded_at'] ?? now,
+              'isServer': jsonData['isServer'] == true,
+              'created_at': jsonData['created_at'] ?? now,
+              'updated_at': jsonData['updated_at'] ?? now,
+              'deleted': false,
+            });
+          } catch (e) {
+            print('Error parsing local note: $e');
           }
         }
       }
+
       if (notes.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('Нет локальных заметок для отправки')));
         return;
       }
+
       final url = Uri.parse('$serverBaseUrl/notes/sync');
       final res = await http.post(url, headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token'
       }, body: jsonEncode({'notes': notes}));
+
       if (res.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('Локальные заметки отправлены на сервер')));
@@ -485,7 +489,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // ======= Получение обновлений с сервера и merge в локальные заметки =======
+  // ======= Получение обновлений с сервера =======
   Future<void> _fetchUpdates() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('jwt_token');
@@ -496,22 +500,25 @@ class _HomePageState extends State<HomePage> {
     }
     setState(() => _loading = true);
     try {
-      // final since = prefs.getInt('notes_last_sync') ?? 0; // <<< БЫЛО >>>
-      int since = 0; // <<< СТАЛО: для синхронизации можно получать всё >>>>
+      int since = 0;
       print('Fetching updates with since=$since');
       final url = Uri.parse('$serverBaseUrl/notes/updates?since=$since');
       final res = await http.get(url, headers: {'Authorization': 'Bearer $token'});
-      print('Server response: ${res.body}');
+
       if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        final List<dynamic> notes = data['notes'] ?? [];
+        final dynamic responseData = jsonDecode(res.body);
+
+        // КРИТИЧЕСКАЯ ПРОВЕРКА: убедимся что responseData - Map
+        if (responseData is! Map<String, dynamic>) {
+          throw Exception('Server returned invalid data type: ${responseData.runtimeType}');
+        }
+
+        final List<dynamic> notes = responseData['notes'] ?? [];
         int cntAdded = 0;
         int cntUpdated = 0;
-        int cntDeleted = 0; // <<< УБРАНО: мягкое удаление >>>
 
         for (final n in notes) {
           final subject = (n['subject'] ?? '').toString();
-          // final deleted = n['deleted'] == true; // <<< УБРАНО: мягкое удаление >>>
           final id = n['id']?.toString() ?? '';
 
           if (id.isEmpty) continue;
@@ -520,9 +527,10 @@ class _HomePageState extends State<HomePage> {
           final uploaded = n['uploaded_at'] is int ? n['uploaded_at'] : DateTime.now().millisecondsSinceEpoch;
 
           final key = 'notes_$subject';
-          List<String> list = prefs.getStringList(key) ?? [];
 
-          // Найдём индекс заметки с таким id (без полного парсинга всех!)
+          // Используем безопасное получение данных
+          List<String> list = await _getSafeNotesList(prefs, key);
+
           int? existingIndex;
           for (int i = 0; i < list.length; i++) {
             try {
@@ -532,22 +540,19 @@ class _HomePageState extends State<HomePage> {
                 break;
               }
             } catch (e) {
-              // Пропускаем битые заметки
               continue;
             }
           }
 
-          // <<< ИЗМЕНЕНО: НЕТ deleted >>>
           final noteJson = jsonEncode({
             'id': id,
             'text': text,
             'uploaded_at': uploaded,
-            'author': n['author']?.toString() ?? 'Unknown', // <<< Добавлено: author >>>
-            'subject': subject, // <<< Добавлено: subject >>>
-            'isServer': true, // <<< ВАЖНО: заметка с сервера >>>
+            'author': n['author']?.toString() ?? 'Unknown',
+            'subject': subject,
+            'isServer': true,
             'created_at': n['created_at'] ?? uploaded,
             'updated_at': n['updated_at'] ?? uploaded,
-            // 'deleted': false, // <<< УБРАНО >>>
           });
 
           if (existingIndex != null) {
@@ -557,30 +562,32 @@ class _HomePageState extends State<HomePage> {
             list.add(noteJson);
             cntAdded++;
           }
+
+          // Безопасное сохранение
           await prefs.setStringList(key, list);
         }
-        final serverTime = data['serverTime'] is int
-            ? data['serverTime']
+
+        final serverTime = responseData['serverTime'] is int
+            ? responseData['serverTime']
             : DateTime.now().millisecondsSinceEpoch;
         await prefs.setInt('notes_last_sync', serverTime);
-        print('Saved serverTime: $serverTime');
+
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
-            'Получено ${notes.length} записей, добавлено: $cntAdded, обновлено: $cntUpdated, удалено: $cntDeleted')));
+            'Получено ${notes.length} записей, добавлено: $cntAdded, обновлено: $cntUpdated')));
       } else {
-        print('Server error: ${res.statusCode}, ${res.body}');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('Ошибка получения обновлений: ${res.statusCode}')));
       }
     } catch (e) {
       print('Fetch updates error: $e');
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Ошибка: $e')));
+          .showSnackBar(SnackBar(content: Text('Ошибка синхронизации: $e')));
     } finally {
       setState(() => _loading = false);
     }
   }
 
-  // ======= Функция синхронизации: удалить серверные, загрузить новые =======
+  // ======= Функция синхронизации =======
   Future<void> _syncServerNotes() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('jwt_token');
@@ -592,37 +599,33 @@ class _HomePageState extends State<HomePage> {
     setState(() => _loading = true);
 
     try {
-      // Получаем все ключи SharedPreferences, начинающиеся на 'notes_'
       final keys = prefs.getKeys().where((k) => k.startsWith('notes_')).toList();
+      print('Found ${keys.length} note keys to sync');
 
       for (final key in keys) {
-        // Убедимся, что мы читаем список строк
-        List<String> list = prefs.getStringList(key) ?? [];
+        // Используем безопасное получение данных
+        List<String> list = await _getSafeNotesList(prefs, key);
         List<String> updatedList = [];
 
         for (final noteStr in list) {
           try {
             final noteMap = jsonDecode(noteStr) as Map<String, dynamic>;
-            final isServer = noteMap['isServer'] == true; // <<< Проверяем поле >>>
+            final isServer = noteMap['isServer'] == true;
 
             if (isServer) {
-              // Заметка с сервера — её нужно удалить
-              continue; // Пропускаем, не добавляем в updatedList
+              continue;
             } else {
-              // Заметка локальная — оставляем
               updatedList.add(noteStr);
             }
           } catch (e) {
-            // Если формат битый — оставляем как есть
+            print('Error parsing note: $e, note: $noteStr');
             updatedList.add(noteStr);
           }
         }
 
-        // Сохраняем обновлённый список (без заметок с isServer = true)
         await prefs.setStringList(key, updatedList);
       }
 
-      // Теперь запрашиваем обновления с сервера (как в _fetchUpdates)
       await _fetchUpdates();
 
       ScaffoldMessenger.of(context)

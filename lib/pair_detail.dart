@@ -3,12 +3,11 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:uuid/uuid.dart'; // Добавь в pubspec.yaml: uuid: ^4.5.0
-import 'package:http/http.dart' as http; // <<< ДОБАВЬ ЭТО >>>
+import 'package:uuid/uuid.dart';
+import 'package:http/http.dart' as http;
 
 // ========== Настройки ==========
-// <<< ПЕРЕНОСИМ СЮДА ИЗ main.dart >>>
-const String serverBaseUrl = 'http://127.0.0.1:8000/api'; // <- поменяй при деплое
+const String serverBaseUrl = 'http://127.0.0.1:8000/api';
 
 int getWeekNumber(DateTime date) {
   final firstDayOfYear = DateTime(date.year, 1, 1);
@@ -42,21 +41,20 @@ class PairItem {
   }
 }
 
-// <<< ИЗМЕНЁННЫЙ КЛАСС NOTE >>>
 class Note {
   final String text;
   final int uploadedAt;
   final String author;
   final String? id;
-  final String subject; // <<< НОВОЕ ПОЛЕ (для миграции и синхронизации) >>>
-  final bool isServer; // <<< НОВОЕ ПОЛЕ >>>
+  final String subject;
+  final bool isServer;
 
   Note({
     required this.text,
     required this.uploadedAt,
     required this.author,
-    required this.subject, // <<< Обязательно добавь сюда >>>
-    required this.isServer, // <<< Обязательно добавь сюда >>>
+    required this.subject,
+    required this.isServer,
     this.id,
   });
 
@@ -64,8 +62,8 @@ class Note {
     'text': text,
     'uploaded_at': uploadedAt,
     'author': author,
-    'subject': subject, // <<< Добавь в JSON >>>
-    'isServer': isServer, // <<< Добавь в JSON >>>
+    'subject': subject,
+    'isServer': isServer,
     'id': id,
   };
 
@@ -73,8 +71,8 @@ class Note {
     text: json['text']?.toString() ?? '',
     uploadedAt: json['uploaded_at'] is int ? json['uploaded_at'] : DateTime.now().millisecondsSinceEpoch,
     author: json['author']?.toString() ?? 'Unknown',
-    subject: json['subject']?.toString() ?? '', // <<< НОВОЕ ПОЛЕ >>>
-    isServer: json['isServer'] == true, // <<< НОВОЕ ПОЛЕ: по умолчанию false, если не указано >>>
+    subject: json['subject']?.toString() ?? '',
+    isServer: json['isServer'] == true,
     id: json['id']?.toString(),
   );
 }
@@ -92,29 +90,44 @@ class _PairDetailPageState extends State<PairDetailPage> {
   TextEditingController ctrl = TextEditingController();
   List<Note> notes = [];
   bool loading = false;
-  bool _userCanDelete = false; // <<< ДОБАВЛЕНО >>>
+  bool _userCanDelete = false;
 
   String _noteKey(String subject) => 'notes_${subject}';
+
+  // Безопасное получение заметок из SharedPreferences
+  Future<List<String>> _getSafeNotesList(SharedPreferences prefs, String key) async {
+    try {
+      final data = prefs.get(key);
+      if (data is List<String>) {
+        return data;
+      } else {
+        print('Invalid data type for key $key: ${data.runtimeType}');
+        await prefs.remove(key);
+        return [];
+      }
+    } catch (e) {
+      print('Error reading notes for key $key: $e');
+      await prefs.remove(key);
+      return [];
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    _loadUserPermissions(); // <<< ВЫЗОВ НОВОЙ ФУНКЦИИ >>>
+    _loadUserPermissions();
     loadNotes();
   }
 
-  // <<< НОВАЯ ФУНКЦИЯ: Загрузка прав пользователя >>>
   Future<void> _loadUserPermissions() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('jwt_token');
     final userGroup = prefs.getString('user_group') ?? '';
 
-    // Проверяем, есть ли у пользователя право удалять
     setState(() {
       _userCanDelete = userGroup == 'teachers' && token != null;
     });
   }
-
 
   Future<void> loadNotes() async {
     print('Loading notes for ${widget.pair.subject}');
@@ -122,63 +135,68 @@ class _PairDetailPageState extends State<PairDetailPage> {
     try {
       SharedPreferences sp = await SharedPreferences.getInstance();
       String key = _noteKey(widget.pair.subject);
-      List<String>? saved = sp.getStringList(key);
+
+      // Используем безопасное получение данных
+      List<String> saved = await _getSafeNotesList(sp, key);
+
       print('Raw saved notes: $saved');
       notes = [];
-      String username = sp.getString('username') ?? 'Гость';  // Реальный username
-      if (saved != null && saved.isNotEmpty) {
+      String username = sp.getString('username') ?? 'Гость';
+
+      if (saved.isNotEmpty) {
         for (var s in saved) {
           try {
-            var json = jsonDecode(s);
-            // <<< МИГРАЦИЯ: Добавляем subject и isServer, если их нет >>>
-            if (json['subject'] == null) {
-              json['subject'] = widget.pair.subject;
+            var jsonData = jsonDecode(s);
+            if (jsonData['subject'] == null) {
+              jsonData['subject'] = widget.pair.subject;
             }
-            if (json['isServer'] == null) {
-              json['isServer'] = false; // Считаем, что старые заметки — локальные
+            if (jsonData['isServer'] == null) {
+              jsonData['isServer'] = false;
             }
-            notes.add(Note.fromJson(json));
+            notes.add(Note.fromJson(jsonData));
           } catch (e) {
-            // Миграция старого формата (если jsonDecode не сработает)
             print('Migrating old note: $s, error: $e');
             final parts = s.split(' — ');
             String text = parts.length > 1 ? parts[1].trim() : s.trim();
             notes.add(Note(
               text: text,
               uploadedAt: DateTime.now().millisecondsSinceEpoch,
-              author: username,  // Реальный username
-              subject: widget.pair.subject, // <<< Добавь subject >>>
-              isServer: false, // <<< Новая мигрированная заметка — локальная >>>
+              author: username,
+              subject: widget.pair.subject,
+              isServer: false,
               id: Uuid().v4(),
             ));
           }
         }
-        // <<< СОХРАНЯЕМ ОБНОВЛЁННЫЙ ФОРМАТ >>>
+        // Сохраняем в правильном формате
         await sp.setStringList(key, notes.map((n) => jsonEncode(n.toJson())).toList());
       }
     } catch (e) {
       print('Error loading notes: $e');
+      notes = [];
     } finally {
       setState(() => loading = false);
       print('Notes loaded: ${notes.length}');
     }
   }
 
-  // <<< ИЗМЕНЁННАЯ ФУНКЦИЯ addNote >>>
   Future<void> addNote() async {
     String text = ctrl.text.trim();
     if (text.isEmpty) return;
     try {
       SharedPreferences sp = await SharedPreferences.getInstance();
       String key = _noteKey(widget.pair.subject);
-      List<String> saved = sp.getStringList(key) ?? [];
+
+      // Используем безопасное получение данных
+      List<String> saved = await _getSafeNotesList(sp, key);
+
       String username = sp.getString('username') ?? 'Гость';
       Note newNote = Note(
         text: text,
         uploadedAt: DateTime.now().millisecondsSinceEpoch,
         author: username,
-        subject: widget.pair.subject, // <<< Добавь subject >>>
-        isServer: false, // <<< ВАЖНО: новая заметка — локальная >>>
+        subject: widget.pair.subject,
+        isServer: false,
         id: Uuid().v4(),
       );
       saved.add(jsonEncode(newNote.toJson()));
@@ -190,14 +208,15 @@ class _PairDetailPageState extends State<PairDetailPage> {
     }
   }
 
-
-  // <<< ОРИГИНАЛЬНАЯ ФУНКЦИЯ: Локальное удаление >>>
   Future<void> deleteNoteAt(int index) async {
     print('Deleting note at index: $index');
     try {
       SharedPreferences sp = await SharedPreferences.getInstance();
       String key = _noteKey(widget.pair.subject);
-      List<String> saved = sp.getStringList(key) ?? [];
+
+      // Используем безопасное получение данных
+      List<String> saved = await _getSafeNotesList(sp, key);
+
       if (index < saved.length) {
         saved.removeAt(index);
         await sp.setStringList(key, saved);
@@ -211,7 +230,6 @@ class _PairDetailPageState extends State<PairDetailPage> {
     }
   }
 
-  // <<< НОВАЯ ФУНКЦИЯ: Подтверждение и удаление с сервера >>>
   Future<void> _confirmAndDeleteNoteFromServer(Note note) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -236,7 +254,6 @@ class _PairDetailPageState extends State<PairDetailPage> {
     }
   }
 
-// <<< НОВАЯ ФУНКЦИЯ: Удаление с сервера и локально >>>
   Future<void> _deleteNoteFromServerAndLocal(Note note) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('jwt_token');
@@ -250,34 +267,31 @@ class _PairDetailPageState extends State<PairDetailPage> {
 
     try {
       final response = await http.delete(
-        Uri.parse('$serverBaseUrl/notes/$noteId/'), // <<< ОБЯЗАТЕЛЬНО СЛЭШ В КОНЦЕ >>>
+        Uri.parse('$serverBaseUrl/notes/$noteId/'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
-        // Успешно удалено на сервере
-        // Теперь удаляем из SharedPreferences
-        // final subject = note.subject ?? ''; // <-- УДАЛИ ЭТУ СТРОКУ
-        final subject = widget.pair.subject; // <-- ВОЗЬМИ SUBJECT ИЗ PairItem
+        final subject = widget.pair.subject;
         final key = 'notes_$subject';
-        List<String> list = prefs.getStringList(key) ?? [];
+
+        // Используем безопасное получение данных
+        List<String> list = await _getSafeNotesList(prefs, key);
+
         list.removeWhere((str) {
           try {
             final localNote = jsonDecode(str) as Map<String, dynamic>;
             return localNote['id'] == noteId;
           } catch (e) {
-            return false; // Игнорируем битые строки
+            return false;
           }
         });
         await prefs.setStringList(key, list);
 
-        // Показываем сообщение
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Заметка удалена с сервера и с телефона'))); // <<< Обновлено сообщение
+            SnackBar(content: Text('Заметка удалена с сервера и с телефона')));
 
-        // Перерисовать список
-        await loadNotes(); // <-- Обновляем список заметок
-
+        await loadNotes();
       } else {
         String errorMsg = 'Ошибка: ${response.statusCode}';
         try {
@@ -292,7 +306,6 @@ class _PairDetailPageState extends State<PairDetailPage> {
           SnackBar(content: Text('Ошибка соединения: $e')));
     }
   }
-
 
   String _formatDateTime(int ms) {
     final dt = DateTime.fromMillisecondsSinceEpoch(ms);
@@ -335,22 +348,21 @@ class _PairDetailPageState extends State<PairDetailPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Автор: ${note.author}'),
-                          Text('Добавлено на сервер: ${_formatDateTime(note.uploadedAt)}'),
-                          Text('Тип: ${note.isServer ? "Серверная" : "Локальная"}'), // <<< ДОБАВЛЕНО: Показ типа заметки >>>
+                          Text('Добавлено: ${_formatDateTime(note.uploadedAt)}'),
+                          Text('Тип: ${note.isServer ? "Серверная" : "Локальная"}'),
                         ],
                       ),
-                      // <<< ИЗМЕНЕНО: trailing >>>
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (_userCanDelete) // <<< УСЛОВИЕ: только если может удалять >>>
+                          if (_userCanDelete)
                             IconButton(
-                              icon: Icon(Icons.delete, color: Colors.red), // <<< КРАСНЫЙ КРЕСТИК >>>
-                              onPressed: () => _confirmAndDeleteNoteFromServer(note), // <<< НОВАЯ ФУНКЦИЯ >>>
+                              icon: Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _confirmAndDeleteNoteFromServer(note),
                             ),
                           IconButton(
-                            icon: Icon(Icons.delete_forever), // <<< ОРИГИНАЛЬНАЯ ЛОКАЛЬНАЯ КНОПКА >>>
-                            onPressed: () => deleteNoteAt(i), // <<< ОРИГИНАЛЬНАЯ ФУНКЦИЯ >>>
+                            icon: Icon(Icons.delete_forever),
+                            onPressed: () => deleteNoteAt(i),
                           ),
                         ],
                       ),
