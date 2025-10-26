@@ -182,11 +182,11 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.sync),
             onPressed: _fetchUpdates,
           ),
-          IconButton(
-            tooltip: 'Синхронизировать заметки с сервера',
-            icon: const Icon(Icons.refresh),
-            onPressed: _token != null ? _syncServerNotes : null,
-          ),
+          // IconButton(
+          //   tooltip: 'Синхронизировать заметки с сервера',
+          //   icon: const Icon(Icons.refresh),
+          //   onPressed: _token != null ? _syncServerNotes : null,
+          // ),
           IconButton(
             tooltip: 'Отправить мои заметки (клиент → сервер)',
             icon: const Icon(Icons.cloud_upload),
@@ -454,7 +454,7 @@ class _HomePageState extends State<HomePage> {
     try {
       List<Map<String, dynamic>> notes = [];
       final keys = prefs.getKeys().where((k) => k.startsWith('notes_')).toList();
-      String username = prefs.getString('username') ?? 'Гость';
+      String currentUsername = prefs.getString('username') ?? 'Гость';
       int now = DateTime.now().millisecondsSinceEpoch;
 
       for (String key in keys) {
@@ -467,6 +467,9 @@ class _HomePageState extends State<HomePage> {
             String text = jsonData['text'] ?? '';
             String id = jsonData['id'] ?? Uuid().v4();
 
+            // ВАЖНОЕ ИСПРАВЛЕНИЕ: Берем автора из самой заметки, а не текущего пользователя
+            String author = jsonData['author'] ?? currentUsername;
+
             if (jsonData['isServer'] == true) {
               continue;
             }
@@ -476,7 +479,7 @@ class _HomePageState extends State<HomePage> {
               'client_id': _randomClientId(),
               'subject': key.replaceFirst('notes_', ''),
               'text': text,
-              'author': username,
+              'author': author, // Используем автора из заметки, а не текущего пользователя
               'uploaded_at': jsonData['uploaded_at'] ?? now,
               'isServer': jsonData['isServer'] == true,
               'created_at': jsonData['created_at'] ?? now,
@@ -557,6 +560,8 @@ class _HomePageState extends State<HomePage> {
 
           final text = (n['text'] ?? '').toString();
           final uploaded = n['uploaded_at'] is int ? n['uploaded_at'] : DateTime.now().millisecondsSinceEpoch;
+          // ВАЖНОЕ ИСПРАВЛЕНИЕ: Берем author_name с сервера, если он есть, иначе author_username
+          final author = n['author_name']?.toString() ?? n['author_username']?.toString() ?? 'Unknown';
 
           final key = 'notes_$subject';
 
@@ -580,7 +585,7 @@ class _HomePageState extends State<HomePage> {
             'id': id,
             'text': text,
             'uploaded_at': uploaded,
-            'author': n['author']?.toString() ?? 'Unknown',
+            'author': author, // Используем правильное имя автора с сервера
             'subject': subject,
             'isServer': true,
             'created_at': n['created_at'] ?? uploaded,
