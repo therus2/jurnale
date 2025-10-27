@@ -72,11 +72,16 @@ class _HomePageState extends State<HomePage> {
   int todayWeekday = DateTime.now().weekday;
   String? _token;
   bool _loading = false;
+  int? _currentGroup;
+  String? _selectedWeekType;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
     super.initState();
     _loadToken();
+    _loadGroupNumber();
+    _loadWeekType();
     _determineWeek();
     _repairCorruptedData();
   }
@@ -88,12 +93,227 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  Future<void> _loadGroupNumber() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _currentGroup = prefs.getInt('groupNumber') ?? 1;
+    });
+  }
+
+  Future<void> _loadWeekType() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _selectedWeekType = prefs.getString('weekType');
+    });
+  }
+
+  Future<void> _selectGroup(int groupNumber) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('groupNumber', groupNumber);
+    setState(() {
+      _currentGroup = groupNumber;
+    });
+    if (_scaffoldKey.currentState!.isDrawerOpen) {
+      Navigator.of(context).pop();
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Выбрана подгруппа $groupNumber')),
+    );
+  }
+
+  Future<void> _selectWeekType(String weekType) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('weekType', weekType);
+    setState(() {
+      _selectedWeekType = weekType;
+    });
+    if (_scaffoldKey.currentState!.isDrawerOpen) {
+      Navigator.of(context).pop();
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Выбрана $weekType неделя')),
+    );
+  }
+
   void _determineWeek() {
     DateTime now = DateTime.now();
     int weekOfYear = getWeekNumber(now);
     weekType = (weekOfYear % 2 == 0) ? 'Чётная неделя' : 'Нечётная неделя';
     todayName = DateFormat.EEEE('ru').format(now);
     setState(() {});
+  }
+
+  // ====== Drawer (выдвигающаяся панель) ======
+  Widget _buildDrawer() {
+    return Drawer(
+      child: Column(
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Color.fromARGB(255, 234, 228, 255),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.school,
+                  size: 48,
+                  color: Colors.blue,
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'ИП-152 Расписание',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Подгруппа: $_currentGroup',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[700],
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Неделя: ${_selectedWeekType ?? 'Авто'}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Выбор подгруппы
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              'Выбери подгруппу:',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ListTile(
+            leading: Icon(
+              Icons.group,
+              color: _currentGroup == 1 ? Colors.blue : Colors.grey,
+            ),
+            title: Text(
+              '1 Подгруппа',
+              style: TextStyle(
+                fontWeight: _currentGroup == 1 ? FontWeight.bold : FontWeight.normal,
+                color: _currentGroup == 1 ? Colors.blue : Colors.black,
+              ),
+            ),
+            trailing: _currentGroup == 1 ? Icon(Icons.check, color: Colors.blue) : null,
+            onTap: () => _selectGroup(1),
+          ),
+          ListTile(
+            leading: Icon(
+              Icons.group,
+              color: _currentGroup == 2 ? Colors.green : Colors.grey,
+            ),
+            title: Text(
+              '2 Подгруппа',
+              style: TextStyle(
+                fontWeight: _currentGroup == 2 ? FontWeight.bold : FontWeight.normal,
+                color: _currentGroup == 2 ? Colors.green : Colors.black,
+              ),
+            ),
+            trailing: _currentGroup == 2 ? Icon(Icons.check, color: Colors.green) : null,
+            onTap: () => _selectGroup(2),
+          ),
+
+          Divider(),
+
+          // Выбор типа недели
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              'Выбери тип недели:',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ListTile(
+            leading: Icon(
+              Icons.autorenew,
+              color: _selectedWeekType == null ? Colors.blue : Colors.grey,
+            ),
+            title: Text(
+              'Авто (текущая)',
+              style: TextStyle(
+                fontWeight: _selectedWeekType == null ? FontWeight.bold : FontWeight.normal,
+                color: _selectedWeekType == null ? Colors.blue : Colors.black,
+              ),
+            ),
+            trailing: _selectedWeekType == null ? Icon(Icons.check, color: Colors.blue) : null,
+            onTap: () => _selectWeekType('auto'),
+          ),
+          ListTile(
+            leading: Icon(
+              Icons.filter_1,
+              color: _selectedWeekType == 'odd' ? Colors.orange : Colors.grey,
+            ),
+            title: Text(
+              'Нечётная',
+              style: TextStyle(
+                fontWeight: _selectedWeekType == 'odd' ? FontWeight.bold : FontWeight.normal,
+                color: _selectedWeekType == 'odd' ? Colors.orange : Colors.black,
+              ),
+            ),
+            trailing: _selectedWeekType == 'odd' ? Icon(Icons.check, color: Colors.orange) : null,
+            onTap: () => _selectWeekType('odd'),
+          ),
+          ListTile(
+            leading: Icon(
+              Icons.filter_2,
+              color: _selectedWeekType == 'even' ? Colors.purple : Colors.grey,
+            ),
+            title: Text(
+              'Чётная',
+              style: TextStyle(
+                fontWeight: _selectedWeekType == 'even' ? FontWeight.bold : FontWeight.normal,
+                color: _selectedWeekType == 'even' ? Colors.purple : Colors.black,
+              ),
+            ),
+            trailing: _selectedWeekType == 'even' ? Icon(Icons.check, color: Colors.purple) : null,
+            onTap: () => _selectWeekType('even'),
+          ),
+
+          Divider(),
+          ListTile(
+            leading: Icon(Icons.info),
+            title: Text('О приложении'),
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text('О приложении'),
+                  content: Text('ИП-152 Расписание\nВерсия 2.0\nТолько для ИП-152'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   // ----- Навигация по дню -----
@@ -168,9 +388,20 @@ class _HomePageState extends State<HomePage> {
   // ====== UI - build ======
   @override
   Widget build(BuildContext context) {
+    String displayWeekType = _selectedWeekType == null
+        ? weekType
+        : _selectedWeekType == 'odd'
+        ? 'Нечётная неделя (ручная)'
+        : 'Чётная неделя (ручная)';
+
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
         title: Text('ИП-152 — Расписание'),
+        leading: IconButton(
+          icon: Icon(Icons.menu),
+          onPressed: () => _scaffoldKey.currentState!.openDrawer(),
+        ),
         actions: [
           IconButton(
             tooltip: 'Авторизация',
@@ -182,11 +413,6 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.sync),
             onPressed: _fetchUpdates,
           ),
-          // IconButton(
-          //   tooltip: 'Синхронизировать заметки с сервера',
-          //   icon: const Icon(Icons.refresh),
-          //   onPressed: _token != null ? _syncServerNotes : null,
-          // ),
           IconButton(
             tooltip: 'Отправить мои заметки (клиент → сервер)',
             icon: const Icon(Icons.cloud_upload),
@@ -194,6 +420,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
+      drawer: _buildDrawer(),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
@@ -206,7 +433,7 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 children: [
                   ListTile(
-                    title: Text(weekType,
+                    title: Text(displayWeekType,
                         style: const TextStyle(
                             fontWeight: FontWeight.bold)),
                     subtitle: Text('Сегодня: $todayName'),
@@ -620,59 +847,6 @@ class _HomePageState extends State<HomePage> {
       }
     } catch (e) {
       print('Fetch updates error: $e');
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Ошибка синхронизации: $e')));
-    } finally {
-      setState(() => _loading = false);
-    }
-  }
-
-  // ======= Функция синхронизации =======
-  Future<void> _syncServerNotes() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
-    if (token == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Сначала авторизуйтесь')));
-      return;
-    }
-    setState(() => _loading = true);
-
-    try {
-      final keys = prefs.getKeys().where((k) => k.startsWith('notes_')).toList();
-      print('Found ${keys.length} note keys to sync');
-
-      for (final key in keys) {
-        // Используем безопасное получение данных
-        List<String> list = await _getSafeNotesList(prefs, key);
-        List<String> updatedList = [];
-
-        for (final noteStr in list) {
-          try {
-            final noteMap = jsonDecode(noteStr) as Map<String, dynamic>;
-            final isServer = noteMap['isServer'] == true;
-
-            if (isServer) {
-              continue;
-            } else {
-              updatedList.add(noteStr);
-            }
-          } catch (e) {
-            print('Error parsing note: $e, note: $noteStr');
-            updatedList.add(noteStr);
-          }
-        }
-
-        await prefs.setStringList(key, updatedList);
-      }
-
-      await _fetchUpdates();
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Синхронизация завершена')));
-
-    } catch (e) {
-      print('Sync error: $e');
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Ошибка синхронизации: $e')));
     } finally {

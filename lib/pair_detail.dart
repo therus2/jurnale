@@ -91,10 +91,10 @@ class _PairDetailPageState extends State<PairDetailPage> {
   List<Note> notes = [];
   bool loading = false;
   bool _userCanDelete = false;
+  String? _userGroup;
 
   String _noteKey(String subject) => 'notes_${subject}';
 
-  // Безопасное получение заметок из SharedPreferences
   Future<List<String>> _getSafeNotesList(SharedPreferences prefs, String key) async {
     try {
       final data = prefs.get(key);
@@ -125,7 +125,9 @@ class _PairDetailPageState extends State<PairDetailPage> {
     final userGroup = prefs.getString('user_group') ?? '';
 
     setState(() {
-      _userCanDelete = userGroup == 'teachers' && token != null;
+      _userGroup = userGroup;
+      // Студенты не могут удалять заметки с сервера
+      _userCanDelete = (userGroup == 'teachers') && token != null;
     });
   }
 
@@ -136,7 +138,6 @@ class _PairDetailPageState extends State<PairDetailPage> {
       SharedPreferences sp = await SharedPreferences.getInstance();
       String key = _noteKey(widget.pair.subject);
 
-      // Используем безопасное получение данных
       List<String> saved = await _getSafeNotesList(sp, key);
 
       print('Raw saved notes: $saved');
@@ -169,10 +170,8 @@ class _PairDetailPageState extends State<PairDetailPage> {
           }
         }
 
-        // СОРТИРОВКА: по дате в порядке УБЫВАНИЯ (новые сверху)
         loadedNotes.sort((a, b) => b.uploadedAt.compareTo(a.uploadedAt));
 
-        // Сохраняем в правильном формате
         await sp.setStringList(key, loadedNotes.map((n) => jsonEncode(n.toJson())).toList());
 
         setState(() {
@@ -195,13 +194,13 @@ class _PairDetailPageState extends State<PairDetailPage> {
   }
 
   Future<void> addNote() async {
+    // Студенты могут добавлять локальные заметки, но не могут отправлять на сервер
     String text = ctrl.text.trim();
     if (text.isEmpty) return;
     try {
       SharedPreferences sp = await SharedPreferences.getInstance();
       String key = _noteKey(widget.pair.subject);
 
-      // Используем безопасное получение данных
       List<String> saved = await _getSafeNotesList(sp, key);
 
       String username = sp.getString('username') ?? 'Гость';
@@ -216,7 +215,7 @@ class _PairDetailPageState extends State<PairDetailPage> {
       saved.add(jsonEncode(newNote.toJson()));
       await sp.setStringList(key, saved);
       ctrl.clear();
-      await loadNotes(); // Перезагружаем с сортировкой
+      await loadNotes();
     } catch (e) {
       print('Error adding note: $e');
     }
@@ -228,13 +227,12 @@ class _PairDetailPageState extends State<PairDetailPage> {
       SharedPreferences sp = await SharedPreferences.getInstance();
       String key = _noteKey(widget.pair.subject);
 
-      // Используем безопасное получение данных
       List<String> saved = await _getSafeNotesList(sp, key);
 
       if (index < saved.length) {
         saved.removeAt(index);
         await sp.setStringList(key, saved);
-        await loadNotes(); // Перезагружаем с сортировкой
+        await loadNotes();
       }
     } catch (e) {
       print('Error deleting note: $e');
@@ -289,7 +287,6 @@ class _PairDetailPageState extends State<PairDetailPage> {
         final subject = widget.pair.subject;
         final key = 'notes_$subject';
 
-        // Используем безопасное получение данных
         List<String> list = await _getSafeNotesList(prefs, key);
 
         list.removeWhere((str) {
@@ -305,7 +302,7 @@ class _PairDetailPageState extends State<PairDetailPage> {
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Заметка удалена с сервера и с телефона')));
 
-        await loadNotes(); // Перезагружаем с сортировкой
+        await loadNotes();
       } else {
         String errorMsg = 'Ошибка: ${response.statusCode}';
         try {
@@ -328,14 +325,19 @@ class _PairDetailPageState extends State<PairDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    bool isStudent = _userGroup == 'students';
+
     return Scaffold(
-      appBar: AppBar(title: Text(widget.pair.subject)),
+      appBar: AppBar(
+        title: Text('${widget.pair.subject} ${isStudent ? '(Студент)' : ''}'),
+      ),
       body: loading
           ? Center(child: CircularProgressIndicator())
           : Padding(
         padding: EdgeInsets.all(12),
         child: Column(
           children: [
+            // Студенты могут добавлять локальные заметки
             TextField(
               controller: ctrl,
               decoration: InputDecoration(
@@ -347,6 +349,20 @@ class _PairDetailPageState extends State<PairDetailPage> {
               ),
             ),
             SizedBox(height: 16),
+            if (isStudent) ...[
+              Card(
+                color: Colors.blue[50],
+                child: Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Text(
+                    'Режим студента: вы можете добавлять локальные заметки и получать обновления с сервера',
+                    style: TextStyle(color: Colors.blue[800]),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+              SizedBox(height: 8),
+            ],
             Expanded(
               child: notes.isEmpty
                   ? Center(child: Text('Нет заметок'))
@@ -356,7 +372,7 @@ class _PairDetailPageState extends State<PairDetailPage> {
                   final note = notes[i];
                   return Card(
                     color: Color.fromARGB(255, 234, 228, 255),
-                    margin: EdgeInsets.only(bottom: 8), // Добавляем отступ между карточками
+                    margin: EdgeInsets.only(bottom: 8),
                     child: ListTile(
                       title: Text(
                         note.text,
@@ -382,11 +398,13 @@ class _PairDetailPageState extends State<PairDetailPage> {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (_userCanDelete)
+                          // Скрываем кнопку удаления с сервера для студентов
+                          if (_userCanDelete && !isStudent)
                             IconButton(
                               icon: Icon(Icons.delete, color: Colors.red),
                               onPressed: () => _confirmAndDeleteNoteFromServer(note),
                             ),
+                          // Локальное удаление доступно всем
                           IconButton(
                             icon: Icon(Icons.delete_forever, color: Colors.grey),
                             onPressed: () => deleteNoteAt(i),
