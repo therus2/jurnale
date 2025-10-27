@@ -15,11 +15,14 @@ class _DayScreenState extends State<DayScreen> {
   List<PairItem> pairs = [];
   final String filename = 'assets/data/saturday.json';
   int? _groupNumber;
+  String? _weekType;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
     super.initState();
     _loadGroupNumber();
+    _loadWeekType();
     loadDay();
   }
 
@@ -30,48 +33,213 @@ class _DayScreenState extends State<DayScreen> {
     });
   }
 
-  Future<void> loadDay() async {
-    print('=== loadDay() called ===');
-    setState(() => loading = true);
+  Future<void> _loadWeekType() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _weekType = prefs.getString('weekType');
+    });
+  }
 
+  Future<void> _selectGroup(int groupNumber) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('groupNumber', groupNumber);
+    setState(() {
+      _groupNumber = groupNumber;
+    });
+    if (_scaffoldKey.currentState!.isEndDrawerOpen) {
+      Navigator.of(context).pop();
+    }
+    await loadDay();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Выбрана подгруппа $groupNumber')),
+    );
+  }
+
+  Future<void> _selectWeekType(String weekType) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (weekType == 'auto') {
+      await prefs.remove('weekType'); // Удаляем настройку для авторежима
+    } else {
+      await prefs.setString('weekType', weekType);
+    }
+
+    setState(() {
+      _weekType = weekType == 'auto' ? null : weekType;
+    });
+
+    if (_scaffoldKey.currentState!.isEndDrawerOpen) {
+      Navigator.of(context).pop();
+    }
+
+    await loadDay();
+
+    String message = weekType == 'auto'
+        ? 'Режим "Авто" - используется текущая неделя'
+        : 'Выбрана ${weekType == 'odd' ? 'нечётная' : 'чётная'} неделя';
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  Widget _buildDrawer() {
+    String currentWeekType = _getCurrentWeekTypeDisplay();
+
+    return Drawer(
+      child: Column(
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Color.fromARGB(255, 234, 228, 255),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.calendar_today, size: 48, color: Colors.green),
+                SizedBox(height: 8),
+                Text('Суббота', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                SizedBox(height: 4),
+                Text('Подгруппа: $_groupNumber', style: TextStyle(fontSize: 14, color: Colors.grey[700])),
+                SizedBox(height: 4),
+                Text('Неделя: $currentWeekType', style: TextStyle(fontSize: 14, color: Colors.grey[700])),
+              ],
+            ),
+          ),
+
+          // Выбор подгруппы
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Text('Выбери подгруппу:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ),
+          ListTile(
+            leading: Icon(Icons.group, color: _groupNumber == 1 ? Colors.blue : Colors.grey),
+            title: Text('1 Подгруппа', style: TextStyle(
+              fontWeight: _groupNumber == 1 ? FontWeight.bold : FontWeight.normal,
+              color: _groupNumber == 1 ? Colors.blue : Colors.black,
+            )),
+            trailing: _groupNumber == 1 ? Icon(Icons.check, color: Colors.blue) : null,
+            onTap: () => _selectGroup(1),
+          ),
+          ListTile(
+            leading: Icon(Icons.group, color: _groupNumber == 2 ? Colors.green : Colors.grey),
+            title: Text('2 Подгруппа', style: TextStyle(
+              fontWeight: _groupNumber == 2 ? FontWeight.bold : FontWeight.normal,
+              color: _groupNumber == 2 ? Colors.green : Colors.black,
+            )),
+            trailing: _groupNumber == 2 ? Icon(Icons.check, color: Colors.green) : null,
+            onTap: () => _selectGroup(2),
+          ),
+
+          Divider(),
+
+          // Выбор типа недели
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Text('Выбери тип недели:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ),
+          ListTile(
+            leading: Icon(
+              Icons.autorenew,
+              color: _weekType == null ? Colors.blue : Colors.grey,
+            ),
+            title: Text(
+              'Авто (текущая)',
+              style: TextStyle(
+                fontWeight: _weekType == null ? FontWeight.bold : FontWeight.normal,
+                color: _weekType == null ? Colors.blue : Colors.black,
+              ),
+            ),
+            trailing: _weekType == null ? Icon(Icons.check, color: Colors.blue) : null,
+            onTap: () => _selectWeekType('auto'),
+          ),
+          ListTile(
+            leading: Icon(
+              Icons.filter_1,
+              color: _weekType == 'odd' ? Colors.orange : Colors.grey,
+            ),
+            title: Text(
+              'Нечётная',
+              style: TextStyle(
+                fontWeight: _weekType == 'odd' ? FontWeight.bold : FontWeight.normal,
+                color: _weekType == 'odd' ? Colors.orange : Colors.black,
+              ),
+            ),
+            trailing: _weekType == 'odd' ? Icon(Icons.check, color: Colors.orange) : null,
+            onTap: () => _selectWeekType('odd'),
+          ),
+          ListTile(
+            leading: Icon(
+              Icons.filter_2,
+              color: _weekType == 'even' ? Colors.purple : Colors.grey,
+            ),
+            title: Text(
+              'Чётная',
+              style: TextStyle(
+                fontWeight: _weekType == 'even' ? FontWeight.bold : FontWeight.normal,
+                color: _weekType == 'even' ? Colors.purple : Colors.black,
+              ),
+            ),
+            trailing: _weekType == 'even' ? Icon(Icons.check, color: Colors.purple) : null,
+            onTap: () => _selectWeekType('even'),
+          ),
+          Divider(),
+        ],
+      ),
+    );
+  }
+
+  String _getCurrentWeekTypeDisplay() {
+    // Авторежим - когда _weekType равен null
+    if (_weekType == null) {
+      DateTime today = DateTime.now();
+      int weekOfYear = getWeekNumber(today);
+      return (weekOfYear % 2 == 0) ? 'Чётная (авто)' : 'Нечётная (авто)';
+    } else if (_weekType == 'odd') {
+      return 'Нечётная (ручная)';
+    } else if (_weekType == 'even') {
+      return 'Чётная (ручная)';
+    } else {
+      // На всякий случай, если какое-то другое значение
+      DateTime today = DateTime.now();
+      int weekOfYear = getWeekNumber(today);
+      return (weekOfYear % 2 == 0) ? 'Чётная (авто)' : 'Нечётная (авто)';
+    }
+  }
+
+  Future<void> loadDay() async {
+    setState(() => loading = true);
     try {
       String raw = await rootBundle.loadString(filename);
-      print('File loaded, length: ${raw.length}');
-
       if (raw.trim().isEmpty) {
-        print('File is empty');
         pairs = [];
         return;
       }
-
       if (int.tryParse(raw.trim()) != null) {
         throw Exception('File contains number instead of JSON: $raw');
       }
-
       dynamic decoded = json.decode(raw);
-      print('Decoded type: ${decoded.runtimeType}');
-
       if (decoded is! List) {
         throw Exception('Expected List but got: ${decoded.runtimeType}');
       }
-
       List<dynamic> arr = decoded;
-      print('Decoded array length: ${arr.length}');
 
-      DateTime today = DateTime.now();
-      int weekOfYear = getWeekNumber(today);
-      String weekType = (weekOfYear % 2 == 0) ? 'even' : 'odd';
-      print('Current week type: $weekType');
+      // Используем выбранный тип недели или автоматический
+      String weekType;
+      if (_weekType == 'odd' || _weekType == 'even') {
+        weekType = _weekType!;
+      } else {
+        DateTime today = DateTime.now();
+        int weekOfYear = getWeekNumber(today);
+        weekType = (weekOfYear % 2 == 0) ? 'even' : 'odd';
+      }
 
       int group = _groupNumber ?? 1;
-      print('User group number: $group');
-
       pairs = arr
           .map((e) {
         try {
           return PairItem.fromMap(e);
         } catch (e) {
-          print('Error creating PairItem from map: $e');
           return null;
         }
       })
@@ -80,34 +248,55 @@ class _DayScreenState extends State<DayScreen> {
           .where((p) {
         bool weekMatch = (p.week == 'both' || p.week == weekType);
         bool groupMatch = (p.group == 'both' || p.group == group.toString());
-        bool matches = weekMatch && groupMatch;
-        print('Pair: ${p.subject}, Week: ${p.week}, Group: ${p.group}, Matches: $matches');
-        return matches;
+        return weekMatch && groupMatch;
       })
           .toList();
-
-      print('Filtered pairs count: ${pairs.length}');
-
     } catch (e) {
-      print('Error in loadDay: $e');
       pairs = [];
     }
-
-    setState(() {
-      loading = false;
-    });
+    setState(() => loading = false);
   }
 
   void openPair(PairItem p) async {
-    await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => PairDetailPage(pair: p, dayFile: 'saturday.json')));
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => PairDetailPage(pair: p, dayFile: 'monday.json')));
     await loadDay();
+  }
+
+  int getWeekNumber(DateTime date) {
+    final firstDayOfYear = DateTime(date.year, 1, 1);
+    final daysOffset = date.difference(firstDayOfYear).inDays;
+    return ((daysOffset + firstDayOfYear.weekday) / 7).ceil();
   }
 
   @override
   Widget build(BuildContext context) {
+    String weekTypeDisplay = _getCurrentWeekTypeDisplay();
+
     return Scaffold(
-      appBar: AppBar(title: Text('Суббота')),
+      key: _scaffoldKey,
+      appBar: AppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Суббота'),
+            Text(
+              weekTypeDisplay,
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+            ),
+          ],
+        ),
+        leading: IconButton(
+          onPressed: () { Navigator.of(context).popUntil((route) => route.isFirst); },
+          icon: Icon(Icons.arrow_back),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.menu),
+            onPressed: () => _scaffoldKey.currentState!.openEndDrawer(),
+          ),
+        ],
+      ),
+      endDrawer: _buildDrawer(),
       body: loading
           ? Center(child: CircularProgressIndicator())
           : pairs.isEmpty
@@ -133,10 +322,4 @@ class _DayScreenState extends State<DayScreen> {
       ),
     );
   }
-}
-
-int getWeekNumber(DateTime date) {
-  final firstDayOfYear = DateTime(date.year, 1, 1);
-  final daysOffset = date.difference(firstDayOfYear).inDays;
-  return ((daysOffset + firstDayOfYear.weekday) / 7).ceil();
 }

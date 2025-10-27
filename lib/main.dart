@@ -74,6 +74,8 @@ class _HomePageState extends State<HomePage> {
   bool _loading = false;
   int? _currentGroup;
   String? _selectedWeekType;
+  String? _userGroup;
+  String? _username; // Добавляем переменную для имени пользователя
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -82,6 +84,8 @@ class _HomePageState extends State<HomePage> {
     _loadToken();
     _loadGroupNumber();
     _loadWeekType();
+    _loadUserGroup();
+    _loadUsername(); // Загружаем имя пользователя
     _determineWeek();
     _repairCorruptedData();
   }
@@ -107,6 +111,20 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  Future<void> _loadUserGroup() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _userGroup = prefs.getString('user_group');
+    });
+  }
+
+  Future<void> _loadUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _username = prefs.getString('username');
+    });
+  }
+
   Future<void> _selectGroup(int groupNumber) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('groupNumber', groupNumber);
@@ -124,17 +142,66 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _selectWeekType(String weekType) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('weekType', weekType);
+
+    if (weekType == 'auto') {
+      await prefs.remove('weekType'); // Удаляем настройку для авторежима
+    } else {
+      await prefs.setString('weekType', weekType);
+    }
+
     setState(() {
-      _selectedWeekType = weekType;
+      _selectedWeekType = weekType == 'auto' ? null : weekType;
     });
+
     if (_scaffoldKey.currentState!.isDrawerOpen) {
       Navigator.of(context).pop();
     }
 
+    String message = weekType == 'auto'
+        ? 'Режим "Авто" - используется текущая неделя'
+        : 'Выбрана ${weekType == 'odd' ? 'нечётная' : 'чётная'} неделя';
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Выбрана $weekType неделя')),
+      SnackBar(content: Text(message)),
     );
+  }
+
+  // ====== Выход из профиля ======
+  Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Выход из профиля'),
+        content: Text('Вы уверены, что хотите выйти?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Отмена'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('Выйти'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('jwt_token');
+      await prefs.remove('username');
+      await prefs.remove('user_group');
+
+      setState(() {
+        _token = null;
+        _username = null;
+        _userGroup = null;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Вы вышли из профиля')),
+      );
+    }
   }
 
   void _determineWeek() {
@@ -147,46 +214,84 @@ class _HomePageState extends State<HomePage> {
 
   // ====== Drawer (выдвигающаяся панель) ======
   Widget _buildDrawer() {
+    // Определяем текущую неделю для отображения в заголовке
+    DateTime now = DateTime.now();
+    int weekOfYear = getWeekNumber(now);
+    String currentWeekType = (weekOfYear % 2 == 0) ? 'Чётная' : 'Нечётная';
+
+    String weekTypeDisplay = _selectedWeekType == null
+        ? '$currentWeekType (авто)'
+        : _selectedWeekType == 'odd' ? 'Нечётная (ручная)' : 'Чётная (ручная)';
+
     return Drawer(
       child: Column(
         children: [
-          DrawerHeader(
+          Container(
+            height: 160, // Увеличиваем высоту заголовка
             decoration: BoxDecoration(
               color: Color.fromARGB(255, 234, 228, 255),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.school,
-                  size: 48,
-                  color: Colors.blue,
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'ИП-152 Расписание',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.school, size: 32, color: Colors.blue),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'ИП-152 Расписание',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Подгруппа: $_currentGroup',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
+                  SizedBox(height: 8),
+                  if (_username != null)
+                    Text(
+                      'Пользователь: $_username',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[700],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Подгруппа: $_currentGroup',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[700],
+                    ),
                   ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Неделя: ${_selectedWeekType ?? 'Авто'}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
+                  SizedBox(height: 2),
+                  Text(
+                    'Неделя: $weekTypeDisplay',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[700],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                  SizedBox(height: 2),
+                  if (_userGroup != null)
+                    Text(
+                      'Роль: ${_userGroup == 'students' ? 'Студент' : 'Преподаватель'}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
 
@@ -292,6 +397,15 @@ class _HomePageState extends State<HomePage> {
           ),
 
           Divider(),
+
+          // Выход из профиля в меню
+          if (_token != null)
+            ListTile(
+              leading: Icon(Icons.logout, color: Colors.red),
+              title: Text('Выйти из профиля', style: TextStyle(color: Colors.red)),
+              onTap: _logout,
+            ),
+
           ListTile(
             leading: Icon(Icons.info),
             title: Text('О приложении'),
@@ -300,7 +414,7 @@ class _HomePageState extends State<HomePage> {
                 context: context,
                 builder: (ctx) => AlertDialog(
                   title: Text('О приложении'),
-                  content: Text('ИП-152 Расписание\nВерсия 2.0\nТолько для ИП-152'),
+                  content: Text('ИП-152 Расписание\nВерсия 1.0'),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(),
@@ -388,11 +502,23 @@ class _HomePageState extends State<HomePage> {
   // ====== UI - build ======
   @override
   Widget build(BuildContext context) {
-    String displayWeekType = _selectedWeekType == null
-        ? weekType
-        : _selectedWeekType == 'odd'
-        ? 'Нечётная неделя (ручная)'
-        : 'Чётная неделя (ручная)';
+    // Определяем текущую неделю
+    DateTime now = DateTime.now();
+    int weekOfYear = getWeekNumber(now);
+    String currentWeekType = (weekOfYear % 2 == 0) ? 'Чётная неделя' : 'Нечётная неделя';
+
+    // Формируем отображаемый текст
+    String displayWeekType;
+    if (_selectedWeekType == null) {
+      displayWeekType = currentWeekType; // Авторежим - показываем текущую неделю
+    } else if (_selectedWeekType == 'odd') {
+      displayWeekType = 'Нечётная неделя (ручная)';
+    } else {
+      displayWeekType = 'Чётная неделя (ручная)';
+    }
+
+    // Проверяем, является ли пользователь студентом
+    bool isStudent = _userGroup == 'students';
 
     return Scaffold(
       key: _scaffoldKey,
@@ -403,21 +529,32 @@ class _HomePageState extends State<HomePage> {
           onPressed: () => _scaffoldKey.currentState!.openDrawer(),
         ),
         actions: [
-          IconButton(
-            tooltip: 'Авторизация',
-            icon: Icon(_token == null ? Icons.login : Icons.verified_user),
-            onPressed: _showLoginDialog,
-          ),
+          // Если пользователь авторизован - показываем кнопку выхода, иначе - кнопку входа
+          // if (_token != null)
+          //   IconButton(
+          //     tooltip: 'Выйти из профиля',
+          //     icon: Icon(Icons.logout, color: Colors.red),
+          //     onPressed: _logout,
+          //   )
+          //else
+            IconButton(
+              tooltip: 'Авторизация',
+              icon: Icon(Icons.login),
+              onPressed: _showLoginDialog,
+            ),
+
           IconButton(
             tooltip: 'Получить обновления (сервер → клиент)',
             icon: const Icon(Icons.sync),
             onPressed: _fetchUpdates,
           ),
-          IconButton(
-            tooltip: 'Отправить мои заметки (клиент → сервер)',
-            icon: const Icon(Icons.cloud_upload),
-            onPressed: _sendLocalNotes,
-          ),
+          // Скрываем кнопку облака для студентов
+          if (!isStudent && _token != null)
+            IconButton(
+              tooltip: 'Отправить мои заметки (клиент → сервер)',
+              icon: const Icon(Icons.cloud_upload),
+              onPressed: _sendLocalNotes,
+            ),
         ],
       ),
       drawer: _buildDrawer(),
@@ -434,8 +571,7 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   ListTile(
                     title: Text(displayWeekType,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold)),
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text('Сегодня: $todayName'),
                   ),
                   Row(
@@ -561,7 +697,10 @@ class _HomePageState extends State<HomePage> {
           await prefs.setString('jwt_token', token);
           await prefs.setString('username', username);
           await _fetchUserGroup(prefs, token);
-          setState(() => _token = token);
+          setState(() {
+            _token = token;
+            _username = username;
+          });
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
               content: Text('Авторизация успешна')));
         } else {
@@ -596,6 +735,9 @@ class _HomePageState extends State<HomePage> {
         final group = data['group'] as String?;
         if (group != null) {
           await prefs.setString('user_group', group);
+          setState(() {
+            _userGroup = group; // Обновляем группу пользователя
+          });
         }
       }
     } catch (e) {
@@ -677,6 +819,14 @@ class _HomePageState extends State<HomePage> {
           .showSnackBar(const SnackBar(content: Text('Сначала авторизуйтесь')));
       return;
     }
+
+    // Дополнительная проверка - студенты не могут отправлять заметки
+    if (_userGroup == 'students') {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Студенты не могут отправлять заметки на сервер')));
+      return;
+    }
+
     setState(() => _loading = true);
     try {
       List<Map<String, dynamic>> notes = [];

@@ -33,12 +33,14 @@ class _DayScreenState extends State<DayScreen> {
     });
   }
 
+  // 2. Исправьте метод _loadWeekType
   Future<void> _loadWeekType() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _weekType = prefs.getString('weekType');
     });
   }
+
 
   Future<void> _selectGroup(int groupNumber) async {
     final prefs = await SharedPreferences.getInstance();
@@ -57,16 +59,29 @@ class _DayScreenState extends State<DayScreen> {
 
   Future<void> _selectWeekType(String weekType) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('weekType', weekType);
+
+    if (weekType == 'auto') {
+      await prefs.remove('weekType'); // Удаляем настройку для авторежима
+    } else {
+      await prefs.setString('weekType', weekType);
+    }
+
     setState(() {
-      _weekType = weekType;
+      _weekType = weekType == 'auto' ? null : weekType;
     });
+
     if (_scaffoldKey.currentState!.isEndDrawerOpen) {
       Navigator.of(context).pop();
     }
+
     await loadDay();
+
+    String message = weekType == 'auto'
+        ? 'Режим "Авто" - используется текущая неделя'
+        : 'Выбрана ${weekType == 'odd' ? 'нечётная' : 'чётная'} неделя';
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Выбрана ${weekType == 'odd' ? 'нечётная' : 'чётная'} неделя')),
+      SnackBar(content: Text(message)),
     );
   }
 
@@ -177,14 +192,20 @@ class _DayScreenState extends State<DayScreen> {
   }
 
   String _getCurrentWeekTypeDisplay() {
+    // Авторежим - когда _weekType равен null
     if (_weekType == null) {
       DateTime today = DateTime.now();
       int weekOfYear = getWeekNumber(today);
       return (weekOfYear % 2 == 0) ? 'Чётная (авто)' : 'Нечётная (авто)';
     } else if (_weekType == 'odd') {
-      return 'Нечётная';
+      return 'Нечётная (ручная)';
+    } else if (_weekType == 'even') {
+      return 'Чётная (ручная)';
     } else {
-      return 'Чётная';
+      // На всякий случай, если какое-то другое значение
+      DateTime today = DateTime.now();
+      int weekOfYear = getWeekNumber(today);
+      return (weekOfYear % 2 == 0) ? 'Чётная (авто)' : 'Нечётная (авто)';
     }
   }
 
@@ -210,6 +231,7 @@ class _DayScreenState extends State<DayScreen> {
       if (_weekType == 'odd' || _weekType == 'even') {
         weekType = _weekType!;
       } else {
+        // Авторежим - определяем текущую неделю
         DateTime today = DateTime.now();
         int weekOfYear = getWeekNumber(today);
         weekType = (weekOfYear % 2 == 0) ? 'even' : 'odd';
