@@ -1,3 +1,4 @@
+// pair_detail.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -92,6 +93,7 @@ class _PairDetailPageState extends State<PairDetailPage> {
   bool loading = false;
   bool _userCanDelete = false;
   String? _userGroup;
+  String? _username;
 
   String _noteKey(String subject) => 'notes_${subject}';
 
@@ -121,14 +123,24 @@ class _PairDetailPageState extends State<PairDetailPage> {
 
   Future<void> _loadUserPermissions() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
+    final token = prefs.getString('permanent_token');
     final userGroup = prefs.getString('user_group') ?? '';
+    final username = prefs.getString('username') ?? '';
+
+    print('=== LOADING USER PERMISSIONS ===');
+    print('Token: ${token != null ? "exists" : "null"}');
+    print('User Group: $userGroup');
+    print('Username: $username');
 
     setState(() {
       _userGroup = userGroup;
-      // Студенты не могут удалять заметки с сервера
+      _username = username;
+      // Преподаватели могут удалять заметки с сервера
       _userCanDelete = (userGroup == 'teachers') && token != null;
     });
+
+    print('User Can Delete: $_userCanDelete');
+    print('==============================');
   }
 
   Future<void> loadNotes() async {
@@ -194,7 +206,6 @@ class _PairDetailPageState extends State<PairDetailPage> {
   }
 
   Future<void> addNote() async {
-    // Студенты могут добавлять локальные заметки, но не могут отправлять на сервер
     String text = ctrl.text.trim();
     if (text.isEmpty) return;
     try {
@@ -247,7 +258,7 @@ class _PairDetailPageState extends State<PairDetailPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Удалить заметку?'),
-        content: Text('Вы уверены, что хотите удалить эту заметку?'),
+        content: Text('Вы уверены, что хотите удалить эту заметку с сервера?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -268,7 +279,7 @@ class _PairDetailPageState extends State<PairDetailPage> {
 
   Future<void> _deleteNoteFromServerAndLocal(Note note) async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
+    final token = prefs.getString('permanent_token');
     final noteId = note.id;
 
     if (token == null || noteId == null) {
@@ -326,10 +337,19 @@ class _PairDetailPageState extends State<PairDetailPage> {
   @override
   Widget build(BuildContext context) {
     bool isStudent = _userGroup == 'students';
+    bool isTeacher = _userGroup == 'teachers';
+
+    // Отладочная информация
+    print('=== DEBUG INFO ===');
+    print('User Group: $_userGroup');
+    print('Is Teacher: $isTeacher');
+    print('User Can Delete: $_userCanDelete');
+    print('Notes count: ${notes.length}');
+    print('==================');
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.pair.subject} ${isStudent ? '(Студент)' : ''}'),
+        title: Text('${widget.pair.subject} ${isStudent ? '(Студент)' : isTeacher ? '(Преподаватель)' : ''}'),
       ),
       body: loading
           ? Center(child: CircularProgressIndicator())
@@ -337,7 +357,7 @@ class _PairDetailPageState extends State<PairDetailPage> {
         padding: EdgeInsets.all(12),
         child: Column(
           children: [
-            // Студенты могут добавлять локальные заметки
+            // Поле для добавления заметок
             TextField(
               controller: ctrl,
               decoration: InputDecoration(
@@ -349,6 +369,8 @@ class _PairDetailPageState extends State<PairDetailPage> {
               ),
             ),
             SizedBox(height: 16),
+
+            // Информация для студентов
             if (isStudent) ...[
               Card(
                 color: Colors.blue[50],
@@ -363,6 +385,38 @@ class _PairDetailPageState extends State<PairDetailPage> {
               ),
               SizedBox(height: 8),
             ],
+
+            // Информация для преподавателей
+            if (isTeacher) ...[
+              Card(
+                color: Colors.green[50],
+                child: Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Режим преподавателя',
+                        style: TextStyle(color: Colors.green[800], fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Вы можете добавлять заметки, отправлять их на сервер и удалять заметки с сервера',
+                        style: TextStyle(color: Colors.green[800]),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Красная кнопка - удаление с сервера',
+                        style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(height: 8),
+            ],
+
             Expanded(
               child: notes.isEmpty
                   ? Center(child: Text('Нет заметок'))
@@ -398,16 +452,19 @@ class _PairDetailPageState extends State<PairDetailPage> {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Скрываем кнопку удаления с сервера для студентов
-                          if (_userCanDelete && !isStudent)
+                          // Красная кнопка удаления с сервера для преподавателей
+                          // Показываем для ВСЕХ заметок преподавателей
+                          if (_userCanDelete)
                             IconButton(
                               icon: Icon(Icons.delete, color: Colors.red),
                               onPressed: () => _confirmAndDeleteNoteFromServer(note),
+                              tooltip: 'Удалить с сервера',
                             ),
                           // Локальное удаление доступно всем
                           IconButton(
                             icon: Icon(Icons.delete_forever, color: Colors.grey),
                             onPressed: () => deleteNoteAt(i),
+                            tooltip: 'Удалить локально',
                           ),
                         ],
                       ),

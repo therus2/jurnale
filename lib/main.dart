@@ -69,23 +69,23 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String weekType = '';
   String todayName = '';
-  int todayWeekday = DateTime.now().weekday;
+  int todayWeekday = DateTime
+      .now()
+      .weekday;
   String? _token;
   bool _loading = false;
   int? _currentGroup;
   String? _selectedWeekType;
   String? _userGroup;
-  String? _username; // Добавляем переменную для имени пользователя
+  String? _username;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
     super.initState();
-    _loadToken();
+    _checkExistingToken();
     _loadGroupNumber();
     _loadWeekType();
-    _loadUserGroup();
-    _loadUsername(); // Загружаем имя пользователя
     _determineWeek();
     _repairCorruptedData();
   }
@@ -93,7 +93,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadToken() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _token = prefs.getString('jwt_token');
+      _token = prefs.getString('permanent_token');
     });
   }
 
@@ -123,6 +123,47 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _username = prefs.getString('username');
     });
+  }
+
+  // ======= Проверка существующего токена при запуске =======
+  Future<void> _checkExistingToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('permanent_token');
+
+    if (token != null) {
+      setState(() => _loading = true);
+      try {
+        final url = Uri.parse('$serverBaseUrl/verify-token');
+        final res = await http.post(url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'token': token}));
+
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body);
+          if (data['success'] == true) {
+            final username = data['username'];
+            setState(() {
+              _token = token;
+              _username = username;
+            });
+            await _fetchUserGroup(prefs, token);
+            print('Auto-login successful for user: $username');
+          } else {
+            // Токен невалиден, удаляем его
+            await prefs.remove('permanent_token');
+            print('Token invalid, removed from storage');
+          }
+        } else {
+          await prefs.remove('permanent_token');
+          print('Token verification failed, removed from storage');
+        }
+      } catch (e) {
+        print('Token verification error: $e');
+        await prefs.remove('permanent_token');
+      } finally {
+        setState(() => _loading = false);
+      }
+    }
   }
 
   Future<void> _selectGroup(int groupNumber) async {
@@ -166,29 +207,30 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ====== Выход из профиля ======
+  // ======= Выход из профиля =======
   Future<void> _logout() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Выход из профиля'),
-        content: Text('Вы уверены, что хотите выйти?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text('Отмена'),
+      builder: (ctx) =>
+          AlertDialog(
+            title: Text('Выход из профиля'),
+            content: Text('Вы уверены, что хотите выйти?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: Text('Отмена'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: Text('Выйти'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text('Выйти'),
-          ),
-        ],
-      ),
     );
 
     if (confirmed == true) {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('jwt_token');
+      await prefs.remove('permanent_token');
       await prefs.remove('username');
       await prefs.remove('user_group');
 
@@ -227,7 +269,7 @@ class _HomePageState extends State<HomePage> {
       child: Column(
         children: [
           Container(
-            height: 160, // Увеличиваем высоту заголовка
+            height: 160,
             decoration: BoxDecoration(
               color: Color.fromARGB(255, 234, 228, 255),
             ),
@@ -284,7 +326,9 @@ class _HomePageState extends State<HomePage> {
                   SizedBox(height: 2),
                   if (_userGroup != null)
                     Text(
-                      'Роль: ${_userGroup == 'students' ? 'Студент' : 'Преподаватель'}',
+                      'Роль: ${_userGroup == 'students'
+                          ? 'Студент'
+                          : 'Преподаватель'}',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[700],
@@ -314,11 +358,14 @@ class _HomePageState extends State<HomePage> {
             title: Text(
               '1 Подгруппа',
               style: TextStyle(
-                fontWeight: _currentGroup == 1 ? FontWeight.bold : FontWeight.normal,
+                fontWeight: _currentGroup == 1 ? FontWeight.bold : FontWeight
+                    .normal,
                 color: _currentGroup == 1 ? Colors.blue : Colors.black,
               ),
             ),
-            trailing: _currentGroup == 1 ? Icon(Icons.check, color: Colors.blue) : null,
+            trailing: _currentGroup == 1
+                ? Icon(Icons.check, color: Colors.blue)
+                : null,
             onTap: () => _selectGroup(1),
           ),
           ListTile(
@@ -329,11 +376,13 @@ class _HomePageState extends State<HomePage> {
             title: Text(
               '2 Подгруппа',
               style: TextStyle(
-                fontWeight: _currentGroup == 2 ? FontWeight.bold : FontWeight.normal,
+                fontWeight: _currentGroup == 2 ? FontWeight.bold : FontWeight
+                    .normal,
                 color: _currentGroup == 2 ? Colors.green : Colors.black,
               ),
             ),
-            trailing: _currentGroup == 2 ? Icon(Icons.check, color: Colors.green) : null,
+            trailing: _currentGroup == 2 ? Icon(
+                Icons.check, color: Colors.green) : null,
             onTap: () => _selectGroup(2),
           ),
 
@@ -358,11 +407,14 @@ class _HomePageState extends State<HomePage> {
             title: Text(
               'Авто (текущая)',
               style: TextStyle(
-                fontWeight: _selectedWeekType == null ? FontWeight.bold : FontWeight.normal,
+                fontWeight: _selectedWeekType == null
+                    ? FontWeight.bold
+                    : FontWeight.normal,
                 color: _selectedWeekType == null ? Colors.blue : Colors.black,
               ),
             ),
-            trailing: _selectedWeekType == null ? Icon(Icons.check, color: Colors.blue) : null,
+            trailing: _selectedWeekType == null ? Icon(
+                Icons.check, color: Colors.blue) : null,
             onTap: () => _selectWeekType('auto'),
           ),
           ListTile(
@@ -373,11 +425,15 @@ class _HomePageState extends State<HomePage> {
             title: Text(
               'Нечётная',
               style: TextStyle(
-                fontWeight: _selectedWeekType == 'odd' ? FontWeight.bold : FontWeight.normal,
-                color: _selectedWeekType == 'odd' ? Colors.orange : Colors.black,
+                fontWeight: _selectedWeekType == 'odd'
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+                color: _selectedWeekType == 'odd' ? Colors.orange : Colors
+                    .black,
               ),
             ),
-            trailing: _selectedWeekType == 'odd' ? Icon(Icons.check, color: Colors.orange) : null,
+            trailing: _selectedWeekType == 'odd' ? Icon(
+                Icons.check, color: Colors.orange) : null,
             onTap: () => _selectWeekType('odd'),
           ),
           ListTile(
@@ -388,11 +444,15 @@ class _HomePageState extends State<HomePage> {
             title: Text(
               'Чётная',
               style: TextStyle(
-                fontWeight: _selectedWeekType == 'even' ? FontWeight.bold : FontWeight.normal,
-                color: _selectedWeekType == 'even' ? Colors.purple : Colors.black,
+                fontWeight: _selectedWeekType == 'even'
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+                color: _selectedWeekType == 'even' ? Colors.purple : Colors
+                    .black,
               ),
             ),
-            trailing: _selectedWeekType == 'even' ? Icon(Icons.check, color: Colors.purple) : null,
+            trailing: _selectedWeekType == 'even' ? Icon(
+                Icons.check, color: Colors.purple) : null,
             onTap: () => _selectWeekType('even'),
           ),
 
@@ -402,7 +462,8 @@ class _HomePageState extends State<HomePage> {
           if (_token != null)
             ListTile(
               leading: Icon(Icons.logout, color: Colors.red),
-              title: Text('Выйти из профиля', style: TextStyle(color: Colors.red)),
+              title: Text(
+                  'Выйти из профиля', style: TextStyle(color: Colors.red)),
               onTap: _logout,
             ),
 
@@ -412,16 +473,17 @@ class _HomePageState extends State<HomePage> {
             onTap: () {
               showDialog(
                 context: context,
-                builder: (ctx) => AlertDialog(
-                  title: Text('О приложении'),
-                  content: Text('ИП-152 Расписание\nВерсия 1.0'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      child: Text('OK'),
+                builder: (ctx) =>
+                    AlertDialog(
+                      title: Text('О приложении'),
+                      content: Text('ИП-152 Расписание\nВерсия 1.0'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          child: Text('OK'),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
               );
             },
           ),
@@ -505,12 +567,15 @@ class _HomePageState extends State<HomePage> {
     // Определяем текущую неделю
     DateTime now = DateTime.now();
     int weekOfYear = getWeekNumber(now);
-    String currentWeekType = (weekOfYear % 2 == 0) ? 'Чётная неделя' : 'Нечётная неделя';
+    String currentWeekType = (weekOfYear % 2 == 0)
+        ? 'Чётная неделя'
+        : 'Нечётная неделя';
 
     // Формируем отображаемый текст
     String displayWeekType;
     if (_selectedWeekType == null) {
-      displayWeekType = currentWeekType; // Авторежим - показываем текущую неделю
+      displayWeekType =
+          currentWeekType; // Авторежим - показываем текущую неделю
     } else if (_selectedWeekType == 'odd') {
       displayWeekType = 'Нечётная неделя (ручная)';
     } else {
@@ -530,13 +595,13 @@ class _HomePageState extends State<HomePage> {
         ),
         actions: [
           // Если пользователь авторизован - показываем кнопку выхода, иначе - кнопку входа
-          // if (_token != null)
-          //   IconButton(
-          //     tooltip: 'Выйти из профиля',
-          //     icon: Icon(Icons.logout, color: Colors.red),
-          //     onPressed: _logout,
-          //   )
-          //else
+          if (_token != null)
+            IconButton(
+              tooltip: 'Выйти из профиля',
+              icon: Icon(Icons.logout, color: Colors.red),
+              onPressed: _logout,
+            )
+          else
             IconButton(
               tooltip: 'Авторизация',
               icon: Icon(Icons.login),
@@ -645,38 +710,40 @@ class _HomePageState extends State<HomePage> {
 
     await showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Вход'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-                controller: usernameCtrl,
-                decoration:
-                const InputDecoration(labelText: 'username')),
-            TextField(
-                controller: passwordCtrl,
-                decoration:
-                const InputDecoration(labelText: 'password'),
-                obscureText: true),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Отмена')),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _login(usernameCtrl.text.trim(), passwordCtrl.text.trim());
-            },
-            child: const Text('Войти'),
+      builder: (ctx) =>
+          AlertDialog(
+            title: const Text('Вход'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                    controller: usernameCtrl,
+                    decoration:
+                    const InputDecoration(labelText: 'username')),
+                TextField(
+                    controller: passwordCtrl,
+                    decoration:
+                    const InputDecoration(labelText: 'password'),
+                    obscureText: true),
+              ],
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Отмена')),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  _login(usernameCtrl.text.trim(), passwordCtrl.text.trim());
+                },
+                child: const Text('Войти'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
+  // ======= Кастомная авторизация =======
   Future<void> _login(String username, String password) async {
     if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -685,18 +752,24 @@ class _HomePageState extends State<HomePage> {
     }
     setState(() => _loading = true);
     try {
-      final url = Uri.parse('$serverBaseUrl/login');
+      // Используем кастомный endpoint вместо JWT
+      final url = Uri.parse('$serverBaseUrl/custom-login');
       final res = await http.post(url,
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({'username': username, 'password': password}));
+
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
-        final token = (data['access'] ?? data['token'] ?? data['access_token']);
-        if (token != null) {
+        if (data['success'] == true) {
+          final token = data['token'];
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('jwt_token', token);
+          await prefs.setString(
+              'permanent_token', token); // Сохраняем постоянный токен
           await prefs.setString('username', username);
+
+          // Получаем группу пользователя
           await _fetchUserGroup(prefs, token);
+
           setState(() {
             _token = token;
             _username = username;
@@ -704,14 +777,14 @@ class _HomePageState extends State<HomePage> {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
               content: Text('Авторизация успешна')));
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Токен не найден в ответе')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(data['error'] ?? 'Ошибка авторизации')));
         }
       } else {
         String msg = 'Ошибка входа';
         try {
           final err = jsonDecode(res.body);
-          msg = (err is Map && err['detail'] != null) ? err['detail'] : res.body;
+          msg = err['error'] ?? res.body;
         } catch (_) {}
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(msg)));
@@ -736,9 +809,12 @@ class _HomePageState extends State<HomePage> {
         if (group != null) {
           await prefs.setString('user_group', group);
           setState(() {
-            _userGroup = group; // Обновляем группу пользователя
+            _userGroup = group;
           });
         }
+      } else if (response.statusCode == 401) {
+        // Токен невалиден, выходим
+        await _logout();
       }
     } catch (e) {
       print('Error fetching user group: $e');
@@ -761,7 +837,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ======= Безопасное получение заметок из SharedPreferences =======
-  Future<List<String>> _getSafeNotesList(SharedPreferences prefs, String key) async {
+  Future<List<String>> _getSafeNotesList(SharedPreferences prefs,
+      String key) async {
     try {
       final data = prefs.get(key);
       if (data is List<String>) {
@@ -802,7 +879,9 @@ class _HomePageState extends State<HomePage> {
         });
 
         // Преобразуем обратно в JSON строки
-        List<String> sortedNotes = noteObjects.map((note) => jsonEncode(note)).toList();
+        List<String> sortedNotes = noteObjects
+            .map((note) => jsonEncode(note))
+            .toList();
         await prefs.setStringList(key, sortedNotes);
       }
     } catch (e) {
@@ -813,8 +892,9 @@ class _HomePageState extends State<HomePage> {
   // ======= Отправка локальных заметок на сервер =======
   Future<void> _sendLocalNotes() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
-    if (token == null) {
+
+    // Проверяем авторизацию через состояние
+    if (_token == null) {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Сначала авторизуйтесь')));
       return;
@@ -823,16 +903,22 @@ class _HomePageState extends State<HomePage> {
     // Дополнительная проверка - студенты не могут отправлять заметки
     if (_userGroup == 'students') {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Студенты не могут отправлять заметки на сервер')));
+          .showSnackBar(const SnackBar(
+          content: Text('Студенты не могут отправлять заметки на сервер')));
       return;
     }
 
     setState(() => _loading = true);
     try {
       List<Map<String, dynamic>> notes = [];
-      final keys = prefs.getKeys().where((k) => k.startsWith('notes_')).toList();
-      String currentUsername = prefs.getString('username') ?? 'Гость';
-      int now = DateTime.now().millisecondsSinceEpoch;
+      final keys = prefs
+          .getKeys()
+          .where((k) => k.startsWith('notes_'))
+          .toList();
+      String currentUsername = _username ?? 'Гость';
+      int now = DateTime
+          .now()
+          .millisecondsSinceEpoch;
 
       for (String key in keys) {
         // Используем безопасное получение данных
@@ -844,7 +930,7 @@ class _HomePageState extends State<HomePage> {
             String text = jsonData['text'] ?? '';
             String id = jsonData['id'] ?? Uuid().v4();
 
-            // ВАЖНОЕ ИСПРАВЛЕНИЕ: Берем автора из самой заметки, а не текущего пользователя
+            // Берем автора из самой заметки, а не текущего пользователя
             String author = jsonData['author'] ?? currentUsername;
 
             if (jsonData['isServer'] == true) {
@@ -856,7 +942,7 @@ class _HomePageState extends State<HomePage> {
               'client_id': _randomClientId(),
               'subject': key.replaceFirst('notes_', ''),
               'text': text,
-              'author': author, // Используем автора из заметки, а не текущего пользователя
+              'author': author,
               'uploaded_at': jsonData['uploaded_at'] ?? now,
               'isServer': jsonData['isServer'] == true,
               'created_at': jsonData['created_at'] ?? now,
@@ -878,12 +964,17 @@ class _HomePageState extends State<HomePage> {
       final url = Uri.parse('$serverBaseUrl/notes/sync');
       final res = await http.post(url, headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token'
+        'Authorization': 'Bearer $_token' // Используем _token из состояния
       }, body: jsonEncode({'notes': notes}));
 
       if (res.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('Локальные заметки отправлены на сервер')));
+      } else if (res.statusCode == 401) {
+        // Токен истек
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Сессия истекла, войдите снова')));
+        await _logout();
       } else {
         String msg = 'Ошибка отправки: ${res.statusCode}';
         try {
@@ -904,25 +995,32 @@ class _HomePageState extends State<HomePage> {
   // ======= Получение обновлений с сервера =======
   Future<void> _fetchUpdates() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
-    if (token == null) {
+
+    // Проверяем авторизацию через состояние
+    if (_token == null) {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Сначала авторизуйтесь')));
       return;
     }
+
     setState(() => _loading = true);
     try {
       int since = 0;
       print('Fetching updates with since=$since');
+
+      // Получаем ВСЕ обновления без фильтрации по пользователю
       final url = Uri.parse('$serverBaseUrl/notes/updates?since=$since');
-      final res = await http.get(url, headers: {'Authorization': 'Bearer $token'});
+      final res = await http.get(url, headers: {
+        'Authorization': 'Bearer $_token'
+      });
 
       if (res.statusCode == 200) {
         final dynamic responseData = jsonDecode(res.body);
 
         // КРИТИЧЕСКАЯ ПРОВЕРКА: убедимся что responseData - Map
         if (responseData is! Map<String, dynamic>) {
-          throw Exception('Server returned invalid data type: ${responseData.runtimeType}');
+          throw Exception(
+              'Server returned invalid data type: ${responseData.runtimeType}');
         }
 
         final List<dynamic> notes = responseData['notes'] ?? [];
@@ -936,9 +1034,11 @@ class _HomePageState extends State<HomePage> {
           if (id.isEmpty) continue;
 
           final text = (n['text'] ?? '').toString();
-          final uploaded = n['uploaded_at'] is int ? n['uploaded_at'] : DateTime.now().millisecondsSinceEpoch;
-          // ВАЖНОЕ ИСПРАВЛЕНИЕ: Берем author_name с сервера, если он есть, иначе author_username
-          final author = n['author_name']?.toString() ?? n['author_username']?.toString() ?? 'Unknown';
+          final uploaded = n['uploaded_at'] is int ? n['uploaded_at'] : DateTime
+              .now()
+              .millisecondsSinceEpoch;
+          final author = n['author_name']?.toString() ??
+              n['author_username']?.toString() ?? 'Unknown';
 
           final key = 'notes_$subject';
 
@@ -962,7 +1062,7 @@ class _HomePageState extends State<HomePage> {
             'id': id,
             'text': text,
             'uploaded_at': uploaded,
-            'author': author, // Используем правильное имя автора с сервера
+            'author': author,
             'subject': subject,
             'isServer': true,
             'created_at': n['created_at'] ?? uploaded,
@@ -986,11 +1086,19 @@ class _HomePageState extends State<HomePage> {
 
         final serverTime = responseData['serverTime'] is int
             ? responseData['serverTime']
-            : DateTime.now().millisecondsSinceEpoch;
+            : DateTime
+            .now()
+            .millisecondsSinceEpoch;
         await prefs.setInt('notes_last_sync', serverTime);
 
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
-            'Получено ${notes.length} записей, добавлено: $cntAdded, обновлено: $cntUpdated')));
+            'Получено ${notes
+                .length} записей, добавлено: $cntAdded, обновлено: $cntUpdated')));
+      } else if (res.statusCode == 401) {
+        // Токен истек
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Сессия истекла, войдите снова')));
+        await _logout();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('Ошибка получения обновлений: ${res.statusCode}')));
