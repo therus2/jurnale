@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'monday.dart' as monday;
 import 'tuesday.dart' as tuesday;
@@ -123,6 +124,28 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _username = prefs.getString('username');
     });
+  }
+
+  // ======= открытие в браузире =======
+  Future<void> _openReplacementsWebsite() async {
+    final url = Uri.parse('https://mkgt.ru/a/mkt-zameny.php');
+
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(
+          url,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось открыть в браузере')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка: $e')),
+      );
+    }
   }
 
   // ======= Проверка существующего токена при запуске =======
@@ -466,6 +489,15 @@ class _HomePageState extends State<HomePage> {
                   'Выйти из профиля', style: TextStyle(color: Colors.red)),
               onTap: _logout,
             ),
+
+          ListTile(
+            leading: Icon(Icons.update, color: Colors.purple),
+            title: Text('Замены расписания'),
+            onTap: () {
+              Navigator.pop(context);
+              _openReplacementsWebsite();
+            },
+          ),
 
           ListTile(
             leading: Icon(Icons.info),
