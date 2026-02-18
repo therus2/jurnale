@@ -8,6 +8,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
 import 'monday.dart' as monday;
@@ -254,6 +255,28 @@ class _HomePageState extends State<HomePage> {
     setState(() {});
   }
 
+  // ======= открытие в браузире =======
+  Future<void> _openReplacementsWebsite() async {
+    final url = Uri.parse('https://mkgt.ru/a/mkt-zameny.php');
+
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(
+          url,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось открыть в браузере')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка: $e')),
+      );
+    }
+  }
+
   // ====== Drawer (выдвигающаяся панель) ======
   Widget _buildDrawer() {
     // Определяем текущую неделю для отображения в заголовке
@@ -454,6 +477,17 @@ class _HomePageState extends State<HomePage> {
             trailing: _selectedWeekType == 'even' ? Icon(
                 Icons.check, color: Colors.purple) : null,
             onTap: () => _selectWeekType('even'),
+          ),
+
+          Divider(),
+
+          ListTile(
+            leading: Icon(Icons.update, color: Colors.purple),
+            title: Text('Замены расписания'),
+            onTap: () {
+              Navigator.pop(context);
+              _openReplacementsWebsite();
+            },
           ),
 
           Divider(),
