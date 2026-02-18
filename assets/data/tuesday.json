@@ -1,52 +1,42 @@
 [
   {
     "index": 1,
-    "subject": "Литература",
+    "subject": "Индивидуальный проект №1",
     "timeStart": "08:30",
     "timeEnd": "10:00",
     "teacher": "Хованских О.А",
     "room": "****",
-    "week": "both",
+    "week": "even",
     "group": "both"
   },
   {
     "index": 2,
-    "subject": "Иностранный язык 1",
+    "subject": "Физика",
     "timeStart": "10:10",
     "timeEnd": "11:40",
-    "teacher": "Войтко Е.В",
-    "room": "***",
+    "teacher": "Никифорова Т.Э",
+    "room": "2306",
     "week": "both",
-    "group": "1"
-  },
-  {
-    "index": 2,
-    "subject": "Иностранный язык 2",
-    "timeStart": "10:10",
-    "timeEnd": "11:40",
-    "teacher": "Сухарева Е.А",
-    "room": "***",
-    "week": "both",
-    "group": "2"
+    "group": "both"
   },
   {
     "index": 3,
-    "subject": "Химия",
+    "subject": "Русский язык",
     "timeStart": "12:20",
     "timeEnd": "13:50",
-    "teacher": "Смирнова Г.Н",
-    "room": "2407",
+    "teacher": "Хованских О.А",
+    "room": "***",
     "week": "both",
     "group": "both"
   },
   {
     "index": 4,
-    "subject": "Математика",
+    "subject": "Индивидуальный проект №2",
     "timeStart": "14:00",
     "timeEnd": "15:30",
-    "teacher": "Семенова Т.В",
-    "room": "1307",
-    "week": "both",
+    "teacher": "Бойко Е.В",
+    "room": "2302",
+    "week": "even",
     "group": "both"
   }
 

@@ -4,17 +4,17 @@
     "subject": "Физическая культура",
     "timeStart": "8:30",
     "timeEnd": "10:00",
-    "teacher": "ПХворостьян Е.Н",
+    "teacher": "Хворостьян Е.Н",
     "room": "4210",
     "week": "both"
   },
   {
     "index": 2,
-    "subject": "Физика",
+    "subject": "Математика",
     "timeStart": "10:10",
     "timeEnd": "11:40",
-    "teacher": "Никифорова Т.Э",
-    "room": "2306",
+    "teacher": "Семенова Т.В.",
+    "room": "1307",
     "week": "both"
   },
   {
@@ -22,8 +22,18 @@
     "subject": "География",
     "timeStart": "12:20",
     "timeEnd": "13:50",
-    "teacher": "Адамантова В.А",
+    "teacher": "Уханова К.В.",
     "room": "1306",
     "week": "both"
+  },
+  {
+    "index": 4,
+    "subject": "Иностранный язык №1",
+    "timeStart": "14:00",
+    "timeEnd": "15:30",
+    "teacher": "Войтко Е.В.",
+    "room": "***",
+    "week": "both",
+    "group": "1"
   }
 ]

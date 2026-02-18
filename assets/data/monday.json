@@ -11,14 +11,34 @@
   },
   {
       "index": 2,
-      "subject": "Русский язык",
+      "subject": "Информатика №1",
       "timeStart": "10:10",
       "timeEnd": "11:40",
-      "teacher": "Хованских О.А",
-      "room": "***",
-      "week": "both",
-      "group": "both"
+      "teacher": "Бойко Е.В",
+      "room": "2302",
+      "week": "odd",
+      "group": "1"
     },
+    {
+      "index": 2,
+      "subject": "Информатика №2",
+      "timeStart": "10:10",
+      "timeEnd": "11:40",
+      "teacher": "Бойко Е.В",
+      "room": "2302",
+      "week": "even",
+      "group": "2"
+    },
+  {
+    "index": 3,
+    "subject": "Физика",
+    "timeStart": "12:20",
+    "timeEnd": "13:50",
+    "teacher": "Никифорова Т.Э",
+    "room": "2306",
+    "week": "odd",
+    "group": "both"
+  },
   {
     "index": 3,
     "subject": "Информатика",
@@ -26,37 +46,37 @@
     "timeEnd": "13:50",
     "teacher": "Бойко Е.В",
     "room": "2302",
-    "week": "both",
+    "week": "even",
     "group": "both"
   },
   {
     "index": 4,
-    "subject": "Информатика (1 подгруппа)",
+    "subject": "Основы финансовой грамотности",
     "timeStart": "14:00",
     "timeEnd": "15:30",
-    "teacher": "Бойко Е.В",
-    "room": "2302",
-    "week": "even",
-    "group": "1"
-  },
-  {
-    "index": 4,
-    "subject": "История",
-    "timeStart": "14:00",
-    "timeEnd": "15:30",
-    "teacher": "Бабулин И.Б",
-    "room": "2401-Б",
+    "teacher": "Занчарова И.В.",
+    "room": "1404",
     "week": "odd",
     "group": "both"
   },
   {
+    "index": 4,
+    "subject": "Биология",
+    "timeStart": "14:00",
+    "timeEnd": "15:30",
+    "teacher": "Дымкова Г.В.",
+    "room": "1306",
+    "week": "even",
+    "group": "both"
+  },
+  {
   "index": 5,
-  "subject": "Информатика (2 подгруппа)",
+  "subject": "История",
   "timeStart": "15:40",
   "timeEnd": "17:10",
-  "teacher": "Хованских О.А",
-  "room": "2302",
-  "week": "odd",
-  "group": "2"
+  "teacher": "Бабулин",
+  "room": "2401-Б",
+  "week": "both",
+  "group": "both"
   }
 ]

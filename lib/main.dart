@@ -19,7 +19,7 @@ import 'saturday.dart' as saturday;
 import 'sunday.dart' as sunday;
 
 // ========== Настройки ==========
-const String serverBaseUrl = 'http://127.0.0.1:8000/api';
+const String serverBaseUrl = 'http://10.0.2.2:8000/api';
 
 // ======= Вспомогательные функции =======
 int getWeekNumber(DateTime date) {

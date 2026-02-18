@@ -1,11 +1,29 @@
 [
   {
-    "index": 1,
+    "index": 2,
     "subject": "Основы безопасноти и защиты Родины",
+    "timeStart": "10:10",
+    "timeEnd": "11:40",
+    "teacher": "Черепанов А.К.",
+    "room": "***",
+    "week": "both"
+  },
+  {
+    "index": 3,
+    "subject": "Химия",
+    "timeStart": "12:20",
+    "timeEnd": "13:50",
+    "teacher": "Смирнова Г.Н",
+    "room": "2407",
+    "week": "both"
+  },
+  {
+    "index": 4,
+    "subject": "Обществознание",
     "timeStart": "14:00",
     "timeEnd": "15:30",
-    "teacher": "Маковский К.Э",
-    "room": "2304",
+    "teacher": "Бабулин И.Б.",
+    "room": "2401-Б",
     "week": "both"
   },
   {
@@ -13,7 +31,7 @@
     "subject": "История",
     "timeStart": "15:40",
     "timeEnd": "17:10",
-    "teacher": "Бабулин И.Б",
+    "teacher": "Бабулин И.Б.",
     "room": "2401-Б",
     "week": "both"
   }
