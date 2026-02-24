@@ -9,8 +9,10 @@ int getWeekNumber(DateTime date) {
   return ((daysOffset + firstDayOfYear.weekday) / 7).ceil();
 }
 
-
 class DayScreen extends StatefulWidget {
+  final String? overrideWeekType;
+  const DayScreen({Key? key, this.overrideWeekType}) : super(key: key);
+
   @override
   _DayScreenState createState() => _DayScreenState();
 }
@@ -27,18 +29,29 @@ class _DayScreenState extends State<DayScreen> {
   }
 
   Future<void> loadDay() async {
-    setState(()=>loading=true);
+    setState(() => loading = true);
     String raw = await rootBundle.loadString(filename);
     List<dynamic> arr = json.decode(raw);
-    DateTime today = DateTime.now();
-    int weekOfYear = getWeekNumber(today);
-    String weekType = (weekOfYear % 2 == 0) ? 'even' : 'odd';
-    pairs = arr.map((e) => PairItem.fromMap(e)).where((p)=> (p.week=='both'||p.week==weekType)).toList();
-    setState(()=>loading=false);
+
+    String weekType;
+    if (widget.overrideWeekType != null) {
+      weekType = widget.overrideWeekType!;
+    } else {
+      DateTime today = DateTime.now();
+      int weekOfYear = getWeekNumber(today);
+      weekType = (weekOfYear % 2 == 0) ? 'even' : 'odd';
+    }
+
+    pairs = arr
+        .map((e) => PairItem.fromMap(e))
+        .where((p) => (p.week == 'both' || p.week == weekType))
+        .toList();
+    setState(() => loading = false);
   }
 
   void openPair(PairItem p) async {
-    await Navigator.of(context).push(MaterialPageRoute(builder: (_)=>PairDetailPage(pair:p, dayFile:'sunday.json')));
+    await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => PairDetailPage(pair: p, dayFile: 'sunday.json')));
     await loadDay();
   }
 
@@ -46,27 +59,30 @@ class _DayScreenState extends State<DayScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Воскресенье')),
-      body: loading ? Center(child:CircularProgressIndicator()) :
-        pairs.isEmpty ? Center(child:Text('На этот день пар нет')) :
-        ListView.builder(
-          itemCount: pairs.length,
-          itemBuilder: (context, i) {
-            var p = pairs[i];
-            return Card(
-              color: Color.fromARGB(255, 234, 228, 255),
-              margin: EdgeInsets.symmetric(horizontal:12, vertical:6),
-              child: ListTile(
-                title: Text('${p.index}. ${p.subject}'), // Исправлено
-                subtitle: Text('${p.timeStart} — ${p.timeEnd}\n${p.teacher} ${p.room}'),
-                isThreeLine: true,
-                onTap: (){
-                    HapticFeedback.selectionClick();
-                    openPair(p);
-                },
-              ),
-            );
-          },
-        ),
+      body: loading
+          ? Center(child: CircularProgressIndicator())
+          : pairs.isEmpty
+              ? Center(child: Text('На этот день пар нет'))
+              : ListView.builder(
+                  itemCount: pairs.length,
+                  itemBuilder: (context, i) {
+                    var p = pairs[i];
+                    return Card(
+                      color: Color.fromARGB(255, 234, 228, 255),
+                      margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      child: ListTile(
+                        title: Text('${p.index}. ${p.subject}'), // Исправлено
+                        subtitle: Text(
+                            '${p.timeStart} — ${p.timeEnd}\n${p.teacher} ${p.room}'),
+                        isThreeLine: true,
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          openPair(p);
+                        },
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }

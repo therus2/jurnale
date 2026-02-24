@@ -70,9 +70,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String weekType = '';
   String todayName = '';
-  int todayWeekday = DateTime
-      .now()
-      .weekday;
+  int todayWeekday = DateTime.now().weekday;
   String? _token;
   bool _loading = false;
   int? _currentGroup;
@@ -212,21 +210,20 @@ class _HomePageState extends State<HomePage> {
   Future<void> _logout() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) =>
-          AlertDialog(
-            title: Text('Выход из профиля'),
-            content: Text('Вы уверены, что хотите выйти?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
-                child: Text('Отмена'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.of(ctx).pop(true),
-                child: Text('Выйти'),
-              ),
-            ],
+      builder: (ctx) => AlertDialog(
+        title: Text('Выход из профиля'),
+        content: Text('Вы уверены, что хотите выйти?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Отмена'),
           ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('Выйти'),
+          ),
+        ],
+      ),
     );
 
     if (confirmed == true) {
@@ -286,7 +283,9 @@ class _HomePageState extends State<HomePage> {
 
     String weekTypeDisplay = _selectedWeekType == null
         ? '$currentWeekType (авто)'
-        : _selectedWeekType == 'odd' ? 'Нечётная (ручная)' : 'Чётная (ручная)';
+        : _selectedWeekType == 'odd'
+            ? 'Нечётная (ручная)'
+            : 'Чётная (ручная)';
 
     return Drawer(
       child: Column(
@@ -349,9 +348,7 @@ class _HomePageState extends State<HomePage> {
                   SizedBox(height: 2),
                   if (_userGroup != null)
                     Text(
-                      'Роль: ${_userGroup == 'students'
-                          ? 'Студент'
-                          : 'Преподаватель'}',
+                      'Роль: ${_userGroup == 'students' ? 'Студент' : 'Преподаватель'}',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[700],
@@ -381,8 +378,8 @@ class _HomePageState extends State<HomePage> {
             title: Text(
               '1 Подгруппа',
               style: TextStyle(
-                fontWeight: _currentGroup == 1 ? FontWeight.bold : FontWeight
-                    .normal,
+                fontWeight:
+                    _currentGroup == 1 ? FontWeight.bold : FontWeight.normal,
                 color: _currentGroup == 1 ? Colors.blue : Colors.black,
               ),
             ),
@@ -399,13 +396,14 @@ class _HomePageState extends State<HomePage> {
             title: Text(
               '2 Подгруппа',
               style: TextStyle(
-                fontWeight: _currentGroup == 2 ? FontWeight.bold : FontWeight
-                    .normal,
+                fontWeight:
+                    _currentGroup == 2 ? FontWeight.bold : FontWeight.normal,
                 color: _currentGroup == 2 ? Colors.green : Colors.black,
               ),
             ),
-            trailing: _currentGroup == 2 ? Icon(
-                Icons.check, color: Colors.green) : null,
+            trailing: _currentGroup == 2
+                ? Icon(Icons.check, color: Colors.green)
+                : null,
             onTap: () => _selectGroup(2),
           ),
 
@@ -436,8 +434,9 @@ class _HomePageState extends State<HomePage> {
                 color: _selectedWeekType == null ? Colors.blue : Colors.black,
               ),
             ),
-            trailing: _selectedWeekType == null ? Icon(
-                Icons.check, color: Colors.blue) : null,
+            trailing: _selectedWeekType == null
+                ? Icon(Icons.check, color: Colors.blue)
+                : null,
             onTap: () => _selectWeekType('auto'),
           ),
           ListTile(
@@ -451,12 +450,13 @@ class _HomePageState extends State<HomePage> {
                 fontWeight: _selectedWeekType == 'odd'
                     ? FontWeight.bold
                     : FontWeight.normal,
-                color: _selectedWeekType == 'odd' ? Colors.orange : Colors
-                    .black,
+                color:
+                    _selectedWeekType == 'odd' ? Colors.orange : Colors.black,
               ),
             ),
-            trailing: _selectedWeekType == 'odd' ? Icon(
-                Icons.check, color: Colors.orange) : null,
+            trailing: _selectedWeekType == 'odd'
+                ? Icon(Icons.check, color: Colors.orange)
+                : null,
             onTap: () => _selectWeekType('odd'),
           ),
           ListTile(
@@ -470,12 +470,13 @@ class _HomePageState extends State<HomePage> {
                 fontWeight: _selectedWeekType == 'even'
                     ? FontWeight.bold
                     : FontWeight.normal,
-                color: _selectedWeekType == 'even' ? Colors.purple : Colors
-                    .black,
+                color:
+                    _selectedWeekType == 'even' ? Colors.purple : Colors.black,
               ),
             ),
-            trailing: _selectedWeekType == 'even' ? Icon(
-                Icons.check, color: Colors.purple) : null,
+            trailing: _selectedWeekType == 'even'
+                ? Icon(Icons.check, color: Colors.purple)
+                : null,
             onTap: () => _selectWeekType('even'),
           ),
 
@@ -496,8 +497,8 @@ class _HomePageState extends State<HomePage> {
           if (_token != null)
             ListTile(
               leading: Icon(Icons.logout, color: Colors.red),
-              title: Text(
-                  'Выйти из профиля', style: TextStyle(color: Colors.red)),
+              title:
+                  Text('Выйти из профиля', style: TextStyle(color: Colors.red)),
               onTap: _logout,
             ),
 
@@ -507,17 +508,16 @@ class _HomePageState extends State<HomePage> {
             onTap: () {
               showDialog(
                 context: context,
-                builder: (ctx) =>
-                    AlertDialog(
-                      title: Text('О приложении'),
-                      content: Text('ИП-152 Расписание\nВерсия 1.0'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(ctx).pop(),
-                          child: Text('OK'),
-                        ),
-                      ],
+                builder: (ctx) => AlertDialog(
+                  title: Text('О приложении'),
+                  content: Text('ИП-152 Расписание\nВерсия 1.0'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: Text('OK'),
                     ),
+                  ],
+                ),
               );
             },
           ),
@@ -530,32 +530,32 @@ class _HomePageState extends State<HomePage> {
   void openToday() {
     switch (todayWeekday) {
       case 1:
-        Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => monday.DayScreen()));
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => monday.DayScreen()));
         break;
       case 2:
-        Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => tuesday.DayScreen()));
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => tuesday.DayScreen()));
         break;
       case 3:
-        Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => wednesday.DayScreen()));
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => wednesday.DayScreen()));
         break;
       case 4:
-        Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => thursday.DayScreen()));
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => thursday.DayScreen()));
         break;
       case 5:
-        Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => friday.DayScreen()));
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => friday.DayScreen()));
         break;
       case 6:
-        Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => saturday.DayScreen()));
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => saturday.DayScreen()));
         break;
       case 7:
-        Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => sunday.DayScreen()));
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => sunday.DayScreen()));
         break;
     }
   }
@@ -563,34 +563,58 @@ class _HomePageState extends State<HomePage> {
   void openTomorrow() {
     int tomorrow = todayWeekday + 1;
     if (tomorrow > 7) tomorrow = 1;
+
+    String? overrideWeekType;
+
+    // Если сегодня суббота (6) или воскресенье (7)
+    if ((todayWeekday == 6 || todayWeekday == 7)) {
+      tomorrow = 1; // Завтра для студента — это всегда понедельник
+
+      // Если выбран автоматический режим определения недели
+      if (_selectedWeekType == null) {
+        DateTime now = DateTime.now();
+        int weekOfYear = getWeekNumber(now);
+        String currentWeekType = (weekOfYear % 2 == 0) ? 'even' : 'odd';
+        // Переключаем на тип следующей недели
+        overrideWeekType = (currentWeekType == 'even') ? 'odd' : 'even';
+      }
+    }
+
     switch (tomorrow) {
       case 1:
-        Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => monday.DayScreen()));
+        Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) =>
+                monday.DayScreen(overrideWeekType: overrideWeekType)));
         break;
       case 2:
-        Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => tuesday.DayScreen()));
+        Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) =>
+                tuesday.DayScreen(overrideWeekType: overrideWeekType)));
         break;
       case 3:
-        Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => wednesday.DayScreen()));
+        Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) =>
+                wednesday.DayScreen(overrideWeekType: overrideWeekType)));
         break;
       case 4:
-        Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => thursday.DayScreen()));
+        Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) =>
+                thursday.DayScreen(overrideWeekType: overrideWeekType)));
         break;
       case 5:
-        Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => friday.DayScreen()));
+        Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) =>
+                friday.DayScreen(overrideWeekType: overrideWeekType)));
         break;
       case 6:
-        Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => saturday.DayScreen()));
+        Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) =>
+                saturday.DayScreen(overrideWeekType: overrideWeekType)));
         break;
       case 7:
-        Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => sunday.DayScreen()));
+        Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) =>
+                sunday.DayScreen(overrideWeekType: overrideWeekType)));
         break;
     }
   }
@@ -601,9 +625,8 @@ class _HomePageState extends State<HomePage> {
     // Определяем текущую неделю
     DateTime now = DateTime.now();
     int weekOfYear = getWeekNumber(now);
-    String currentWeekType = (weekOfYear % 2 == 0)
-        ? 'Чётная неделя'
-        : 'Нечётная неделя';
+    String currentWeekType =
+        (weekOfYear % 2 == 0) ? 'Чётная неделя' : 'Нечётная неделя';
 
     // Формируем отображаемый текст
     String displayWeekType;
@@ -660,62 +683,63 @@ class _HomePageState extends State<HomePage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Card(
-              color: const Color.fromARGB(255, 234, 228, 255),
+              padding: const EdgeInsets.all(12),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  ListTile(
-                    title: Text(displayWeekType,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('Сегодня: $todayName'),
+                  Card(
+                    color: const Color.fromARGB(255, 234, 228, 255),
+                    child: Column(
+                      children: [
+                        ListTile(
+                          title: Text(displayWeekType,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text('Сегодня: $todayName'),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            ElevatedButton(
+                              onPressed: () {
+                                HapticFeedback.selectionClick();
+                                openToday();
+                              },
+                              child: const Text('Открыть сегодня'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                HapticFeedback.selectionClick();
+                                openTomorrow();
+                              },
+                              child: const Text('Открыть завтра'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                    ),
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          HapticFeedback.selectionClick();
-                          openToday();
-                        },
-                        child: const Text('Открыть сегодня'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          HapticFeedback.selectionClick();
-                          openTomorrow();
-                        },
-                        child: const Text('Открыть завтра'),
-                      ),
-                    ],
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: GridView.count(
+                      crossAxisCount: 2,
+                      childAspectRatio: 3 / 2,
+                      mainAxisSpacing: 8,
+                      crossAxisSpacing: 8,
+                      children: [
+                        _dayButton('Понедельник', monday.DayScreen()),
+                        _dayButton('Вторник', tuesday.DayScreen()),
+                        _dayButton('Среда', wednesday.DayScreen()),
+                        _dayButton('Четверг', thursday.DayScreen()),
+                        _dayButton('Пятница', friday.DayScreen()),
+                        _dayButton('Суббота', saturday.DayScreen()),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 8),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: GridView.count(
-                crossAxisCount: 2,
-                childAspectRatio: 3 / 2,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                children: [
-                  _dayButton('Понедельник', monday.DayScreen()),
-                  _dayButton('Вторник', tuesday.DayScreen()),
-                  _dayButton('Среда', wednesday.DayScreen()),
-                  _dayButton('Четверг', thursday.DayScreen()),
-                  _dayButton('Пятница', friday.DayScreen()),
-                  _dayButton('Суббота', saturday.DayScreen()),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -723,12 +747,11 @@ class _HomePageState extends State<HomePage> {
     return ElevatedButton(
       onPressed: () {
         HapticFeedback.lightImpact();
-        Navigator.of(context)
-            .push(MaterialPageRoute(builder: (_) => page));
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
       },
       style: ButtonStyle(
-        backgroundColor: MaterialStateProperty.all(
-            const Color.fromARGB(255, 234, 228, 255)),
+        backgroundColor:
+            MaterialStateProperty.all(const Color.fromARGB(255, 234, 228, 255)),
         shape: MaterialStateProperty.all(
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
         ),
@@ -744,44 +767,41 @@ class _HomePageState extends State<HomePage> {
 
     await showDialog(
       context: context,
-      builder: (ctx) =>
-          AlertDialog(
-            title: const Text('Вход'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                    controller: usernameCtrl,
-                    decoration:
-                    const InputDecoration(labelText: 'username')),
-                TextField(
-                    controller: passwordCtrl,
-                    decoration:
-                    const InputDecoration(labelText: 'password'),
-                    obscureText: true),
-              ],
-            ),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text('Отмена')),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  _login(usernameCtrl.text.trim(), passwordCtrl.text.trim());
-                },
-                child: const Text('Войти'),
-              ),
-            ],
+      builder: (ctx) => AlertDialog(
+        title: const Text('Вход'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+                controller: usernameCtrl,
+                decoration: const InputDecoration(labelText: 'username')),
+            TextField(
+                controller: passwordCtrl,
+                decoration: const InputDecoration(labelText: 'password'),
+                obscureText: true),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Отмена')),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _login(usernameCtrl.text.trim(), passwordCtrl.text.trim());
+            },
+            child: const Text('Войти'),
           ),
+        ],
+      ),
     );
   }
 
   // ======= Кастомная авторизация =======
   Future<void> _login(String username, String password) async {
     if (username.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Введите username и password')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Введите username и password')));
       return;
     }
     setState(() => _loading = true);
@@ -808,11 +828,11 @@ class _HomePageState extends State<HomePage> {
             _token = token;
             _username = username;
           });
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Авторизация успешна')));
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Авторизация успешна')));
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(data['error'] ?? 'Ошибка авторизации')));
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(data['error'] ?? 'Ошибка авторизации')));
         }
       } else {
         String msg = 'Ошибка входа';
@@ -871,8 +891,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ======= Безопасное получение заметок из SharedPreferences =======
-  Future<List<String>> _getSafeNotesList(SharedPreferences prefs,
-      String key) async {
+  Future<List<String>> _getSafeNotesList(
+      SharedPreferences prefs, String key) async {
     try {
       final data = prefs.get(key);
       if (data is List<String>) {
@@ -913,9 +933,8 @@ class _HomePageState extends State<HomePage> {
         });
 
         // Преобразуем обратно в JSON строки
-        List<String> sortedNotes = noteObjects
-            .map((note) => jsonEncode(note))
-            .toList();
+        List<String> sortedNotes =
+            noteObjects.map((note) => jsonEncode(note)).toList();
         await prefs.setStringList(key, sortedNotes);
       }
     } catch (e) {
@@ -936,8 +955,7 @@ class _HomePageState extends State<HomePage> {
 
     // Дополнительная проверка - студенты не могут отправлять заметки
     if (_userGroup == 'students') {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Студенты не могут отправлять заметки на сервер')));
       return;
     }
@@ -945,14 +963,10 @@ class _HomePageState extends State<HomePage> {
     setState(() => _loading = true);
     try {
       List<Map<String, dynamic>> notes = [];
-      final keys = prefs
-          .getKeys()
-          .where((k) => k.startsWith('notes_'))
-          .toList();
+      final keys =
+          prefs.getKeys().where((k) => k.startsWith('notes_')).toList();
       String currentUsername = _username ?? 'Гость';
-      int now = DateTime
-          .now()
-          .millisecondsSinceEpoch;
+      int now = DateTime.now().millisecondsSinceEpoch;
 
       for (String key in keys) {
         // Используем безопасное получение данных
@@ -996,18 +1010,20 @@ class _HomePageState extends State<HomePage> {
       }
 
       final url = Uri.parse('$serverBaseUrl/notes/sync');
-      final res = await http.post(url, headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_token' // Используем _token из состояния
-      }, body: jsonEncode({'notes': notes}));
+      final res = await http.post(url,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $_token' // Используем _token из состояния
+          },
+          body: jsonEncode({'notes': notes}));
 
       if (res.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('Локальные заметки отправлены на сервер')));
       } else if (res.statusCode == 401) {
         // Токен истек
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Сессия истекла, войдите снова')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Сессия истекла, войдите снова')));
         await _logout();
       } else {
         String msg = 'Ошибка отправки: ${res.statusCode}';
@@ -1044,9 +1060,8 @@ class _HomePageState extends State<HomePage> {
 
       // Получаем ВСЕ обновления без фильтрации по пользователю
       final url = Uri.parse('$serverBaseUrl/notes/updates?since=$since');
-      final res = await http.get(url, headers: {
-        'Authorization': 'Bearer $_token'
-      });
+      final res =
+          await http.get(url, headers: {'Authorization': 'Bearer $_token'});
 
       if (res.statusCode == 200) {
         final dynamic responseData = jsonDecode(res.body);
@@ -1068,11 +1083,12 @@ class _HomePageState extends State<HomePage> {
           if (id.isEmpty) continue;
 
           final text = (n['text'] ?? '').toString();
-          final uploaded = n['uploaded_at'] is int ? n['uploaded_at'] : DateTime
-              .now()
-              .millisecondsSinceEpoch;
+          final uploaded = n['uploaded_at'] is int
+              ? n['uploaded_at']
+              : DateTime.now().millisecondsSinceEpoch;
           final author = n['author_name']?.toString() ??
-              n['author_username']?.toString() ?? 'Unknown';
+              n['author_username']?.toString() ??
+              'Unknown';
 
           final key = 'notes_$subject';
 
@@ -1120,18 +1136,16 @@ class _HomePageState extends State<HomePage> {
 
         final serverTime = responseData['serverTime'] is int
             ? responseData['serverTime']
-            : DateTime
-            .now()
-            .millisecondsSinceEpoch;
+            : DateTime.now().millisecondsSinceEpoch;
         await prefs.setInt('notes_last_sync', serverTime);
 
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
-            'Получено ${notes
-                .length} записей, добавлено: $cntAdded, обновлено: $cntUpdated')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                'Получено ${notes.length} записей, добавлено: $cntAdded, обновлено: $cntUpdated')));
       } else if (res.statusCode == 401) {
         // Токен истек
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Сессия истекла, войдите снова')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Сессия истекла, войдите снова')));
         await _logout();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(

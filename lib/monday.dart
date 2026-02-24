@@ -6,6 +6,9 @@ import 'pair_detail.dart';
 import 'dart:math' as math;
 
 class DayScreen extends StatefulWidget {
+  final String? overrideWeekType;
+  const DayScreen({Key? key, this.overrideWeekType}) : super(key: key);
+
   @override
   _DayScreenState createState() => _DayScreenState();
 }
@@ -35,12 +38,15 @@ class _DayScreenState extends State<DayScreen> {
 
   // 2. Исправьте метод _loadWeekType
   Future<void> _loadWeekType() async {
+    if (widget.overrideWeekType != null) {
+      setState(() => _weekType = widget.overrideWeekType);
+      return;
+    }
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _weekType = prefs.getString('weekType');
     });
   }
-
 
   Future<void> _selectGroup(int groupNumber) async {
     final prefs = await SharedPreferences.getInstance();
@@ -100,11 +106,15 @@ class _DayScreenState extends State<DayScreen> {
               children: [
                 Icon(Icons.calendar_today, size: 48, color: Colors.red),
                 SizedBox(height: 8),
-                Text('Понедельник', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('Понедельник',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 SizedBox(height: 4),
-                Text('Подгруппа: $_groupNumber', style: TextStyle(fontSize: 14, color: Colors.grey[700])),
+                Text('Подгруппа: $_groupNumber',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[700])),
                 SizedBox(height: 4),
-                Text('Неделя: $currentWeekType', style: TextStyle(fontSize: 14, color: Colors.grey[700])),
+                Text('Неделя: $currentWeekType',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[700])),
               ],
             ),
           ),
@@ -112,24 +122,35 @@ class _DayScreenState extends State<DayScreen> {
           // Выбор подгруппы
           Padding(
             padding: EdgeInsets.all(16),
-            child: Text('Выбери подгруппу:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            child: Text('Выбери подгруппу:',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ),
           ListTile(
-            leading: Icon(Icons.group, color: _groupNumber == 1 ? Colors.blue : Colors.grey),
-            title: Text('1 Подгруппа', style: TextStyle(
-              fontWeight: _groupNumber == 1 ? FontWeight.bold : FontWeight.normal,
-              color: _groupNumber == 1 ? Colors.blue : Colors.black,
-            )),
-            trailing: _groupNumber == 1 ? Icon(Icons.check, color: Colors.blue) : null,
+            leading: Icon(Icons.group,
+                color: _groupNumber == 1 ? Colors.blue : Colors.grey),
+            title: Text('1 Подгруппа',
+                style: TextStyle(
+                  fontWeight:
+                      _groupNumber == 1 ? FontWeight.bold : FontWeight.normal,
+                  color: _groupNumber == 1 ? Colors.blue : Colors.black,
+                )),
+            trailing: _groupNumber == 1
+                ? Icon(Icons.check, color: Colors.blue)
+                : null,
             onTap: () => _selectGroup(1),
           ),
           ListTile(
-            leading: Icon(Icons.group, color: _groupNumber == 2 ? Colors.green : Colors.grey),
-            title: Text('2 Подгруппа', style: TextStyle(
-              fontWeight: _groupNumber == 2 ? FontWeight.bold : FontWeight.normal,
-              color: _groupNumber == 2 ? Colors.green : Colors.black,
-            )),
-            trailing: _groupNumber == 2 ? Icon(Icons.check, color: Colors.green) : null,
+            leading: Icon(Icons.group,
+                color: _groupNumber == 2 ? Colors.green : Colors.grey),
+            title: Text('2 Подгруппа',
+                style: TextStyle(
+                  fontWeight:
+                      _groupNumber == 2 ? FontWeight.bold : FontWeight.normal,
+                  color: _groupNumber == 2 ? Colors.green : Colors.black,
+                )),
+            trailing: _groupNumber == 2
+                ? Icon(Icons.check, color: Colors.green)
+                : null,
             onTap: () => _selectGroup(2),
           ),
 
@@ -138,7 +159,8 @@ class _DayScreenState extends State<DayScreen> {
           // Выбор типа недели
           Padding(
             padding: EdgeInsets.all(16),
-            child: Text('Выбери тип недели:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            child: Text('Выбери тип недели:',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ),
           ListTile(
             leading: Icon(
@@ -148,11 +170,14 @@ class _DayScreenState extends State<DayScreen> {
             title: Text(
               'Авто (текущая)',
               style: TextStyle(
-                fontWeight: _weekType == null ? FontWeight.bold : FontWeight.normal,
+                fontWeight:
+                    _weekType == null ? FontWeight.bold : FontWeight.normal,
                 color: _weekType == null ? Colors.blue : Colors.black,
               ),
             ),
-            trailing: _weekType == null ? Icon(Icons.check, color: Colors.blue) : null,
+            trailing: _weekType == null
+                ? Icon(Icons.check, color: Colors.blue)
+                : null,
             onTap: () => _selectWeekType('auto'),
           ),
           ListTile(
@@ -163,11 +188,14 @@ class _DayScreenState extends State<DayScreen> {
             title: Text(
               'Нечётная',
               style: TextStyle(
-                fontWeight: _weekType == 'odd' ? FontWeight.bold : FontWeight.normal,
+                fontWeight:
+                    _weekType == 'odd' ? FontWeight.bold : FontWeight.normal,
                 color: _weekType == 'odd' ? Colors.orange : Colors.black,
               ),
             ),
-            trailing: _weekType == 'odd' ? Icon(Icons.check, color: Colors.orange) : null,
+            trailing: _weekType == 'odd'
+                ? Icon(Icons.check, color: Colors.orange)
+                : null,
             onTap: () => _selectWeekType('odd'),
           ),
           ListTile(
@@ -178,11 +206,14 @@ class _DayScreenState extends State<DayScreen> {
             title: Text(
               'Чётная',
               style: TextStyle(
-                fontWeight: _weekType == 'even' ? FontWeight.bold : FontWeight.normal,
+                fontWeight:
+                    _weekType == 'even' ? FontWeight.bold : FontWeight.normal,
                 color: _weekType == 'even' ? Colors.purple : Colors.black,
               ),
             ),
-            trailing: _weekType == 'even' ? Icon(Icons.check, color: Colors.purple) : null,
+            trailing: _weekType == 'even'
+                ? Icon(Icons.check, color: Colors.purple)
+                : null,
             onTap: () => _selectWeekType('even'),
           ),
           Divider(),
@@ -240,19 +271,20 @@ class _DayScreenState extends State<DayScreen> {
       int group = _groupNumber ?? 1;
       pairs = arr
           .map((e) {
-        try {
-          return PairItem.fromMap(e);
-        } catch (e) {
-          return null;
-        }
-      })
+            try {
+              return PairItem.fromMap(e);
+            } catch (e) {
+              return null;
+            }
+          })
           .where((p) => p != null)
           .cast<PairItem>()
           .where((p) {
-        bool weekMatch = (p.week == 'both' || p.week == weekType);
-        bool groupMatch = (p.group == 'both' || p.group == group.toString());
-        return weekMatch && groupMatch;
-      })
+            bool weekMatch = (p.week == 'both' || p.week == weekType);
+            bool groupMatch =
+                (p.group == 'both' || p.group == group.toString());
+            return weekMatch && groupMatch;
+          })
           .toList();
     } catch (e) {
       pairs = [];
@@ -261,7 +293,8 @@ class _DayScreenState extends State<DayScreen> {
   }
 
   void openPair(PairItem p) async {
-    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => PairDetailPage(pair: p, dayFile: 'monday.json')));
+    await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => PairDetailPage(pair: p, dayFile: 'monday.json')));
     await loadDay();
   }
 
@@ -289,7 +322,9 @@ class _DayScreenState extends State<DayScreen> {
           ],
         ),
         leading: IconButton(
-          onPressed: () { Navigator.of(context).popUntil((route) => route.isFirst); },
+          onPressed: () {
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          },
           icon: Icon(Icons.arrow_back),
         ),
         actions: [
@@ -303,26 +338,27 @@ class _DayScreenState extends State<DayScreen> {
       body: loading
           ? Center(child: CircularProgressIndicator())
           : pairs.isEmpty
-          ? Center(child: Text('На этот день пар нет'))
-          : ListView.builder(
-        itemCount: pairs.length,
-        itemBuilder: (context, i) {
-          var p = pairs[i];
-          return Card(
-            color: Color.fromARGB(255, 234, 228, 255),
-            margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: ListTile(
-              title: Text('${p.index}. ${p.subject}'),
-              subtitle: Text('${p.timeStart} — ${p.timeEnd}\n${p.teacher} ${p.room}'),
-              isThreeLine: true,
-              onTap: () {
-                HapticFeedback.selectionClick();
-                openPair(p);
-              },
-            ),
-          );
-        },
-      ),
+              ? Center(child: Text('На этот день пар нет'))
+              : ListView.builder(
+                  itemCount: pairs.length,
+                  itemBuilder: (context, i) {
+                    var p = pairs[i];
+                    return Card(
+                      color: Color.fromARGB(255, 234, 228, 255),
+                      margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      child: ListTile(
+                        title: Text('${p.index}. ${p.subject}'),
+                        subtitle: Text(
+                            '${p.timeStart} — ${p.timeEnd}\n${p.teacher} ${p.room}'),
+                        isThreeLine: true,
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          openPair(p);
+                        },
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }
