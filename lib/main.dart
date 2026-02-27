@@ -1,6 +1,7 @@
 // lib/main.dart
 import 'dart:convert';
 import 'dart:math';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,9 +19,11 @@ import 'thursday.dart' as thursday;
 import 'friday.dart' as friday;
 import 'saturday.dart' as saturday;
 import 'sunday.dart' as sunday;
+import 'theme_manager.dart';
+import 'widgets/app_drawer.dart';
 
-// ========== Настройки ==========
-const String serverBaseUrl = 'http://10.0.2.2:8000/api';
+// ======= Настройки =======
+const String serverBaseUrl = 'https://80.93.63.72/api';
 
 // ======= Вспомогательные функции =======
 int getWeekNumber(DateTime date) {
@@ -40,9 +43,20 @@ String _randomClientId() {
   return '${DateTime.now().millisecondsSinceEpoch}_$randPart';
 }
 
+// Класс для обхода проверки SSL (необходимо для самоподписанного сертификата на сервере)
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+  }
+}
+
 // ======= Приложение =======
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  HttpOverrides.global = MyHttpOverrides(); // Включаем обход проверки SSL
   await initializeDateFormatting('ru', null);
   runApp(const MyApp());
 }
@@ -51,11 +65,24 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'ИП-152 Расписание (синхрон.)',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const HomePage(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (_, ThemeMode currentMode, __) {
+        return MaterialApp(
+          title: 'ИП-152 Расписание (синхрон.)',
+          debugShowCheckedModeBanner: false,
+          themeMode: currentMode,
+          theme: ThemeData(
+            primarySwatch: Colors.blue,
+            brightness: Brightness.light,
+          ),
+          darkTheme: ThemeData(
+            primarySwatch: Colors.blue,
+            brightness: Brightness.dark,
+          ),
+          home: const HomePage(),
+        );
+      },
     );
   }
 }
@@ -87,6 +114,11 @@ class _HomePageState extends State<HomePage> {
     _loadWeekType();
     _determineWeek();
     _repairCorruptedData();
+    _loadTheme();
+  }
+
+  Future<void> _loadTheme() async {
+    await ThemeManager.loadTheme();
   }
 
   Future<void> _loadToken() async {
@@ -276,7 +308,6 @@ class _HomePageState extends State<HomePage> {
 
   // ====== Drawer (выдвигающаяся панель) ======
   Widget _buildDrawer() {
-    // Определяем текущую неделю для отображения в заголовке
     DateTime now = DateTime.now();
     int weekOfYear = getWeekNumber(now);
     String currentWeekType = (weekOfYear % 2 == 0) ? 'Чётная' : 'Нечётная';
@@ -287,242 +318,16 @@ class _HomePageState extends State<HomePage> {
             ? 'Нечётная (ручная)'
             : 'Чётная (ручная)';
 
-    return Drawer(
-      child: Column(
-        children: [
-          Container(
-            height: 160,
-            decoration: BoxDecoration(
-              color: Color.fromARGB(255, 234, 228, 255),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.school, size: 32, color: Colors.blue),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'ИП-152 Расписание',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  if (_username != null)
-                    Text(
-                      'Пользователь: $_username',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[700],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  SizedBox(height: 2),
-                  Text(
-                    'Подгруппа: $_currentGroup',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[700],
-                    ),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    'Неделя: $weekTypeDisplay',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[700],
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 2),
-                  if (_userGroup != null)
-                    Text(
-                      'Роль: ${_userGroup == 'students' ? 'Студент' : 'Преподаватель'}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-
-          // Выбор подгруппы
-          Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              'Выбери подгруппу:',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          ListTile(
-            leading: Icon(
-              Icons.group,
-              color: _currentGroup == 1 ? Colors.blue : Colors.grey,
-            ),
-            title: Text(
-              '1 Подгруппа',
-              style: TextStyle(
-                fontWeight:
-                    _currentGroup == 1 ? FontWeight.bold : FontWeight.normal,
-                color: _currentGroup == 1 ? Colors.blue : Colors.black,
-              ),
-            ),
-            trailing: _currentGroup == 1
-                ? Icon(Icons.check, color: Colors.blue)
-                : null,
-            onTap: () => _selectGroup(1),
-          ),
-          ListTile(
-            leading: Icon(
-              Icons.group,
-              color: _currentGroup == 2 ? Colors.green : Colors.grey,
-            ),
-            title: Text(
-              '2 Подгруппа',
-              style: TextStyle(
-                fontWeight:
-                    _currentGroup == 2 ? FontWeight.bold : FontWeight.normal,
-                color: _currentGroup == 2 ? Colors.green : Colors.black,
-              ),
-            ),
-            trailing: _currentGroup == 2
-                ? Icon(Icons.check, color: Colors.green)
-                : null,
-            onTap: () => _selectGroup(2),
-          ),
-
-          Divider(),
-
-          // Выбор типа недели
-          Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              'Выбери тип недели:',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          ListTile(
-            leading: Icon(
-              Icons.autorenew,
-              color: _selectedWeekType == null ? Colors.blue : Colors.grey,
-            ),
-            title: Text(
-              'Авто (текущая)',
-              style: TextStyle(
-                fontWeight: _selectedWeekType == null
-                    ? FontWeight.bold
-                    : FontWeight.normal,
-                color: _selectedWeekType == null ? Colors.blue : Colors.black,
-              ),
-            ),
-            trailing: _selectedWeekType == null
-                ? Icon(Icons.check, color: Colors.blue)
-                : null,
-            onTap: () => _selectWeekType('auto'),
-          ),
-          ListTile(
-            leading: Icon(
-              Icons.filter_1,
-              color: _selectedWeekType == 'odd' ? Colors.orange : Colors.grey,
-            ),
-            title: Text(
-              'Нечётная',
-              style: TextStyle(
-                fontWeight: _selectedWeekType == 'odd'
-                    ? FontWeight.bold
-                    : FontWeight.normal,
-                color:
-                    _selectedWeekType == 'odd' ? Colors.orange : Colors.black,
-              ),
-            ),
-            trailing: _selectedWeekType == 'odd'
-                ? Icon(Icons.check, color: Colors.orange)
-                : null,
-            onTap: () => _selectWeekType('odd'),
-          ),
-          ListTile(
-            leading: Icon(
-              Icons.filter_2,
-              color: _selectedWeekType == 'even' ? Colors.purple : Colors.grey,
-            ),
-            title: Text(
-              'Чётная',
-              style: TextStyle(
-                fontWeight: _selectedWeekType == 'even'
-                    ? FontWeight.bold
-                    : FontWeight.normal,
-                color:
-                    _selectedWeekType == 'even' ? Colors.purple : Colors.black,
-              ),
-            ),
-            trailing: _selectedWeekType == 'even'
-                ? Icon(Icons.check, color: Colors.purple)
-                : null,
-            onTap: () => _selectWeekType('even'),
-          ),
-
-          Divider(),
-
-          ListTile(
-            leading: Icon(Icons.update, color: Colors.purple),
-            title: Text('Замены расписания'),
-            onTap: () {
-              Navigator.pop(context);
-              _openReplacementsWebsite();
-            },
-          ),
-
-          Divider(),
-
-          // Выход из профиля в меню
-          if (_token != null)
-            ListTile(
-              leading: Icon(Icons.logout, color: Colors.red),
-              title:
-                  Text('Выйти из профиля', style: TextStyle(color: Colors.red)),
-              onTap: _logout,
-            ),
-
-          ListTile(
-            leading: Icon(Icons.info),
-            title: Text('О приложении'),
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: Text('О приложении'),
-                  content: Text('ИП-152 Расписание\nВерсия 1.0'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      child: Text('OK'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+    return AppDrawer(
+      currentGroup: _currentGroup,
+      selectedWeekType: _selectedWeekType,
+      weekTypeDisplay: weekTypeDisplay,
+      username: _username,
+      userGroup: _userGroup,
+      onGroupSelect: _selectGroup,
+      onWeekTypeSelect: _selectWeekType,
+      onLogout: _logout,
+      onReplacementsOpen: _openReplacementsWebsite,
     );
   }
 
@@ -688,7 +493,9 @@ class _HomePageState extends State<HomePage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Card(
-                    color: const Color.fromARGB(255, 234, 228, 255),
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[850]
+                        : const Color.fromARGB(255, 234, 228, 255),
                     child: Column(
                       children: [
                         ListTile(
@@ -750,8 +557,11 @@ class _HomePageState extends State<HomePage> {
         Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
       },
       style: ButtonStyle(
-        backgroundColor:
-            MaterialStateProperty.all(const Color.fromARGB(255, 234, 228, 255)),
+        backgroundColor: MaterialStateProperty.resolveWith((states) {
+          return Theme.of(context).brightness == Brightness.dark
+              ? Colors.grey[800]
+              : const Color.fromARGB(255, 234, 228, 255);
+        }),
         shape: MaterialStateProperty.all(
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
         ),

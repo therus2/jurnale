@@ -4,6 +4,7 @@ import 'package:flutter/services.dart' show rootBundle, HapticFeedback;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'pair_detail.dart';
 import 'dart:math' as math;
+import 'widgets/app_drawer.dart';
 
 class DayScreen extends StatefulWidget {
   final String? overrideWeekType;
@@ -91,133 +92,15 @@ class _DayScreenState extends State<DayScreen> {
   }
 
   Widget _buildDrawer() {
-    String currentWeekType = _getCurrentWeekTypeDisplay();
+    String currentWeekTypeDisplay = _getCurrentWeekTypeDisplay();
 
-    return Drawer(
-      child: Column(
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
-              color: Color.fromARGB(255, 234, 228, 255),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.calendar_today, size: 48, color: Colors.green),
-                SizedBox(height: 8),
-                Text('Суббота',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                SizedBox(height: 4),
-                Text('Подгруппа: $_groupNumber',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[700])),
-                SizedBox(height: 4),
-                Text('Неделя: $currentWeekType',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[700])),
-              ],
-            ),
-          ),
-
-          // Выбор подгруппы
-          Padding(
-            padding: EdgeInsets.all(16),
-            child: Text('Выбери подгруппу:',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ),
-          ListTile(
-            leading: Icon(Icons.group,
-                color: _groupNumber == 1 ? Colors.blue : Colors.grey),
-            title: Text('1 Подгруппа',
-                style: TextStyle(
-                  fontWeight:
-                      _groupNumber == 1 ? FontWeight.bold : FontWeight.normal,
-                  color: _groupNumber == 1 ? Colors.blue : Colors.black,
-                )),
-            trailing: _groupNumber == 1
-                ? Icon(Icons.check, color: Colors.blue)
-                : null,
-            onTap: () => _selectGroup(1),
-          ),
-          ListTile(
-            leading: Icon(Icons.group,
-                color: _groupNumber == 2 ? Colors.green : Colors.grey),
-            title: Text('2 Подгруппа',
-                style: TextStyle(
-                  fontWeight:
-                      _groupNumber == 2 ? FontWeight.bold : FontWeight.normal,
-                  color: _groupNumber == 2 ? Colors.green : Colors.black,
-                )),
-            trailing: _groupNumber == 2
-                ? Icon(Icons.check, color: Colors.green)
-                : null,
-            onTap: () => _selectGroup(2),
-          ),
-
-          Divider(),
-
-          // Выбор типа недели
-          Padding(
-            padding: EdgeInsets.all(16),
-            child: Text('Выбери тип недели:',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ),
-          ListTile(
-            leading: Icon(
-              Icons.autorenew,
-              color: _weekType == null ? Colors.blue : Colors.grey,
-            ),
-            title: Text(
-              'Авто (текущая)',
-              style: TextStyle(
-                fontWeight:
-                    _weekType == null ? FontWeight.bold : FontWeight.normal,
-                color: _weekType == null ? Colors.blue : Colors.black,
-              ),
-            ),
-            trailing: _weekType == null
-                ? Icon(Icons.check, color: Colors.blue)
-                : null,
-            onTap: () => _selectWeekType('auto'),
-          ),
-          ListTile(
-            leading: Icon(
-              Icons.filter_1,
-              color: _weekType == 'odd' ? Colors.orange : Colors.grey,
-            ),
-            title: Text(
-              'Нечётная',
-              style: TextStyle(
-                fontWeight:
-                    _weekType == 'odd' ? FontWeight.bold : FontWeight.normal,
-                color: _weekType == 'odd' ? Colors.orange : Colors.black,
-              ),
-            ),
-            trailing: _weekType == 'odd'
-                ? Icon(Icons.check, color: Colors.orange)
-                : null,
-            onTap: () => _selectWeekType('odd'),
-          ),
-          ListTile(
-            leading: Icon(
-              Icons.filter_2,
-              color: _weekType == 'even' ? Colors.purple : Colors.grey,
-            ),
-            title: Text(
-              'Чётная',
-              style: TextStyle(
-                fontWeight:
-                    _weekType == 'even' ? FontWeight.bold : FontWeight.normal,
-                color: _weekType == 'even' ? Colors.purple : Colors.black,
-              ),
-            ),
-            trailing: _weekType == 'even'
-                ? Icon(Icons.check, color: Colors.purple)
-                : null,
-            onTap: () => _selectWeekType('even'),
-          ),
-          Divider(),
-        ],
-      ),
+    return AppDrawer(
+      currentGroup: _groupNumber,
+      selectedWeekType: _weekType,
+      weekTypeDisplay: currentWeekTypeDisplay,
+      onGroupSelect: _selectGroup,
+      onWeekTypeSelect: _selectWeekType,
+      dayTitle: 'Суббота',
     );
   }
 
@@ -342,7 +225,9 @@ class _DayScreenState extends State<DayScreen> {
                   itemBuilder: (context, i) {
                     var p = pairs[i];
                     return Card(
-                      color: Color.fromARGB(255, 234, 228, 255),
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[850]
+                          : const Color.fromARGB(255, 234, 228, 255),
                       margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       child: ListTile(
                         title: Text('${p.index}. ${p.subject}'),

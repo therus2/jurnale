@@ -8,7 +8,7 @@ import 'package:uuid/uuid.dart';
 import 'package:http/http.dart' as http;
 
 // ========== Настройки ==========
-const String serverBaseUrl = 'http://127.0.0.1:8000/api';
+const String serverBaseUrl = 'https://80.93.63.72/api';
 
 int getWeekNumber(DateTime date) {
   final firstDayOfYear = DateTime(date.year, 1, 1);
@@ -26,7 +26,8 @@ class PairItem {
   final String week;
   final String group;
 
-  PairItem(this.index, this.subject, this.timeStart, this.timeEnd, this.teacher, this.room, this.week, this.group);
+  PairItem(this.index, this.subject, this.timeStart, this.timeEnd, this.teacher,
+      this.room, this.week, this.group);
 
   factory PairItem.fromMap(Map<String, dynamic> m) {
     return PairItem(
@@ -60,22 +61,24 @@ class Note {
   });
 
   Map<String, dynamic> toJson() => {
-    'text': text,
-    'uploaded_at': uploadedAt,
-    'author': author,
-    'subject': subject,
-    'isServer': isServer,
-    'id': id,
-  };
+        'text': text,
+        'uploaded_at': uploadedAt,
+        'author': author,
+        'subject': subject,
+        'isServer': isServer,
+        'id': id,
+      };
 
   factory Note.fromJson(Map<String, dynamic> json) => Note(
-    text: json['text']?.toString() ?? '',
-    uploadedAt: json['uploaded_at'] is int ? json['uploaded_at'] : DateTime.now().millisecondsSinceEpoch,
-    author: json['author']?.toString() ?? 'Unknown',
-    subject: json['subject']?.toString() ?? '',
-    isServer: json['isServer'] == true,
-    id: json['id']?.toString(),
-  );
+        text: json['text']?.toString() ?? '',
+        uploadedAt: json['uploaded_at'] is int
+            ? json['uploaded_at']
+            : DateTime.now().millisecondsSinceEpoch,
+        author: json['author']?.toString() ?? 'Unknown',
+        subject: json['subject']?.toString() ?? '',
+        isServer: json['isServer'] == true,
+        id: json['id']?.toString(),
+      );
 }
 
 class PairDetailPage extends StatefulWidget {
@@ -97,7 +100,8 @@ class _PairDetailPageState extends State<PairDetailPage> {
 
   String _noteKey(String subject) => 'notes_${subject}';
 
-  Future<List<String>> _getSafeNotesList(SharedPreferences prefs, String key) async {
+  Future<List<String>> _getSafeNotesList(
+      SharedPreferences prefs, String key) async {
     try {
       final data = prefs.get(key);
       if (data is List<String>) {
@@ -184,7 +188,8 @@ class _PairDetailPageState extends State<PairDetailPage> {
 
         loadedNotes.sort((a, b) => b.uploadedAt.compareTo(a.uploadedAt));
 
-        await sp.setStringList(key, loadedNotes.map((n) => jsonEncode(n.toJson())).toList());
+        await sp.setStringList(
+            key, loadedNotes.map((n) => jsonEncode(n.toJson())).toList());
 
         setState(() {
           notes = loadedNotes;
@@ -320,12 +325,12 @@ class _PairDetailPageState extends State<PairDetailPage> {
           final body = jsonDecode(response.body);
           errorMsg = body['error'] ?? body.toString();
         } catch (_) {}
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(errorMsg)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(errorMsg)));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка соединения: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Ошибка соединения: $e')));
     }
   }
 
@@ -349,133 +354,179 @@ class _PairDetailPageState extends State<PairDetailPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.pair.subject} ${isStudent ? '(Студент)' : isTeacher ? '(Преподаватель)' : ''}'),
+        title: Text(
+            '${widget.pair.subject} ${isStudent ? '(Студент)' : isTeacher ? '(Преподаватель)' : ''}'),
       ),
       body: loading
           ? Center(child: CircularProgressIndicator())
           : Padding(
-        padding: EdgeInsets.all(12),
-        child: Column(
-          children: [
-            // Поле для добавления заметок
-            TextField(
-              controller: ctrl,
-              decoration: InputDecoration(
-                labelText: 'Добавить заметку для ${widget.pair.subject}',
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.send),
-                  onPressed: addNote,
-                ),
-              ),
-            ),
-            SizedBox(height: 16),
-
-            // Информация для студентов
-            if (isStudent) ...[
-              Card(
-                color: Colors.blue[50],
-                child: Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Text(
-                    'Режим студента: вы можете добавлять локальные заметки и получать обновления с сервера',
-                    style: TextStyle(color: Colors.blue[800]),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-              SizedBox(height: 8),
-            ],
-
-            // Информация для преподавателей
-            if (isTeacher) ...[
-              Card(
-                color: Colors.green[50],
-                child: Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Режим преподавателя',
-                        style: TextStyle(color: Colors.green[800], fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Вы можете добавлять заметки, отправлять их на сервер и удалять заметки с сервера',
-                        style: TextStyle(color: Colors.green[800]),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Красная кнопка - удаление с сервера',
-                        style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(height: 8),
-            ],
-
-            Expanded(
-              child: notes.isEmpty
-                  ? Center(child: Text('Нет заметок'))
-                  : ListView.builder(
-                itemCount: notes.length,
-                itemBuilder: (context, i) {
-                  final note = notes[i];
-                  return Card(
-                    color: Color.fromARGB(255, 234, 228, 255),
-                    margin: EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      title: Text(
-                        note.text,
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(height: 4),
-                          Text('Автор: ${note.author}'),
-                          SizedBox(height: 2),
-                          Text('Добавлено: ${_formatDateTime(note.uploadedAt)}'),
-                          SizedBox(height: 2),
-                          Text(
-                            'Тип: ${note.isServer ? "Серверная" : "Локальная"}',
-                            style: TextStyle(
-                              color: note.isServer ? Colors.green : Colors.blue,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Красная кнопка удаления с сервера для преподавателей
-                          // Показываем для ВСЕХ заметок преподавателей
-                          if (_userCanDelete)
-                            IconButton(
-                              icon: Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _confirmAndDeleteNoteFromServer(note),
-                              tooltip: 'Удалить с сервера',
-                            ),
-                          // Локальное удаление доступно всем
-                          IconButton(
-                            icon: Icon(Icons.delete_forever, color: Colors.grey),
-                            onPressed: () => deleteNoteAt(i),
-                            tooltip: 'Удалить локально',
-                          ),
-                        ],
+              padding: EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  // Поле для добавления заметок
+                  TextField(
+                    controller: ctrl,
+                    decoration: InputDecoration(
+                      labelText: 'Добавить заметку для ${widget.pair.subject}',
+                      suffixIcon: IconButton(
+                        icon: Icon(Icons.send),
+                        onPressed: addNote,
                       ),
                     ),
-                  );
-                },
+                  ),
+                  SizedBox(height: 16),
+
+                  // Информация для студентов
+                  if (isStudent) ...[
+                    Card(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.blue[900]?.withOpacity(0.3)
+                          : Colors.blue[50],
+                      child: Padding(
+                        padding: EdgeInsets.all(12),
+                        child: Text(
+                          'Режим студента: вы можете добавлять локальные заметки и получать обновления с сервера',
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.blue[200]
+                                    : Colors.blue[800],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                  ],
+
+                  // Информация для преподавателей
+                  if (isTeacher) ...[
+                    Card(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.green[900]?.withOpacity(0.3)
+                          : Colors.green[50],
+                      child: Padding(
+                        padding: EdgeInsets.all(12),
+                        child: Column(
+                          children: [
+                            Text(
+                              'Режим преподавателя',
+                              style: TextStyle(
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.green[200]
+                                    : Colors.green[800],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Вы можете добавлять заметки, отправлять их на сервер и удалять заметки с сервера',
+                              style: TextStyle(
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.green[200]
+                                    : Colors.green[800],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Красная кнопка - удаление с сервера',
+                              style: TextStyle(
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.red[300]
+                                    : Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                  ],
+
+                  Expanded(
+                    child: notes.isEmpty
+                        ? Center(child: Text('Нет заметок'))
+                        : ListView.builder(
+                            itemCount: notes.length,
+                            itemBuilder: (context, i) {
+                              final note = notes[i];
+                              return Card(
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.grey[850]
+                                    : Color.fromARGB(255, 234, 228, 255),
+                                margin: EdgeInsets.only(bottom: 8),
+                                child: ListTile(
+                                  title: Text(
+                                    note.text,
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500),
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      SizedBox(height: 4),
+                                      Text('Автор: ${note.author}'),
+                                      SizedBox(height: 2),
+                                      Text(
+                                          'Добавлено: ${_formatDateTime(note.uploadedAt)}'),
+                                      SizedBox(height: 2),
+                                      Text(
+                                        'Тип: ${note.isServer ? "Серверная" : "Локальная"}',
+                                        style: TextStyle(
+                                          color: note.isServer
+                                              ? (Theme.of(context).brightness ==
+                                                      Brightness.dark
+                                                  ? Colors.green[300]
+                                                  : Colors.green)
+                                              : (Theme.of(context).brightness ==
+                                                      Brightness.dark
+                                                  ? Colors.blue[300]
+                                                  : Colors.blue),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // Красная кнопка удаления с сервера для преподавателей
+                                      // Показываем для ВСЕХ заметок преподавателей
+                                      if (_userCanDelete)
+                                        IconButton(
+                                          icon: Icon(Icons.delete,
+                                              color: Colors.red),
+                                          onPressed: () =>
+                                              _confirmAndDeleteNoteFromServer(
+                                                  note),
+                                          tooltip: 'Удалить с сервера',
+                                        ),
+                                      // Локальное удаление доступно всем
+                                      IconButton(
+                                        icon: Icon(Icons.delete_forever,
+                                            color: Colors.grey),
+                                        onPressed: () => deleteNoteAt(i),
+                                        tooltip: 'Удалить локально',
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
     );
   }
 }

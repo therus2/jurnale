@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle, HapticFeedback;
 import 'pair_detail.dart';
+import 'widgets/app_drawer.dart';
 
 int getWeekNumber(DateTime date) {
   final firstDayOfYear = DateTime(date.year, 1, 1);
@@ -59,6 +60,7 @@ class _DayScreenState extends State<DayScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Воскресенье')),
+      drawer: AppDrawer(dayTitle: 'Воскресенье'),
       body: loading
           ? Center(child: CircularProgressIndicator())
           : pairs.isEmpty
@@ -68,7 +70,9 @@ class _DayScreenState extends State<DayScreen> {
                   itemBuilder: (context, i) {
                     var p = pairs[i];
                     return Card(
-                      color: Color.fromARGB(255, 234, 228, 255),
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[850]
+                          : const Color.fromARGB(255, 234, 228, 255),
                       margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       child: ListTile(
                         title: Text('${p.index}. ${p.subject}'), // Исправлено
