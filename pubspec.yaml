@@ -11,7 +11,6 @@ dependencies:
     sdk: flutter
   shared_preferences: ^2.5.3
   intl: ^0.20.2
-  flutter_launcher_icons: ^0.13.1
   http: ^1.2.0
   uuid: ^4.5.0
   url_launcher: ^6.3.2
@@ -24,7 +23,8 @@ flutter:
 dev_dependencies:
   flutter_launcher_icons: ^0.13.1
 
-flutter_icons:
+flutter_launcher_icons:
   android: true
   ios: true
+  remove_alpha_ios: true
   image_path: "assets/icon/icon.png"
