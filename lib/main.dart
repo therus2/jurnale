@@ -21,9 +21,10 @@ import 'saturday.dart' as saturday;
 import 'sunday.dart' as sunday;
 import 'theme_manager.dart';
 import 'widgets/app_drawer.dart';
+import 'admin_panel.dart';
 
 // ======= Настройки =======
-const String serverBaseUrl = 'https://80.93.63.72/api';
+const String serverBaseUrl = 'http://192.168.2.128:8000/api';
 
 // ======= Вспомогательные функции =======
 int getWeekNumber(DateTime date) {
@@ -104,6 +105,7 @@ class _HomePageState extends State<HomePage> {
   String? _selectedWeekType;
   String? _userGroup;
   String? _username;
+  bool _isAdmin = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -115,6 +117,17 @@ class _HomePageState extends State<HomePage> {
     _determineWeek();
     _repairCorruptedData();
     _loadTheme();
+    _loadIsAdmin(); // Подгружаем из памяти при запуске
+  }
+
+  Future<void> _loadIsAdmin() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isAdmin = prefs.getBool('is_admin') ?? false;
+      _username = prefs.getString('username');
+      _userGroup = prefs.getString('user_group');
+      _token = prefs.getString('permanent_token');
+    });
   }
 
   Future<void> _loadTheme() async {
@@ -153,6 +166,7 @@ class _HomePageState extends State<HomePage> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _username = prefs.getString('username');
+      _isAdmin = prefs.getBool('is_admin') ?? false;
     });
   }
 
@@ -173,9 +187,14 @@ class _HomePageState extends State<HomePage> {
           final data = jsonDecode(res.body);
           if (data['success'] == true) {
             final username = data['username'];
+            final bool isAdmin = data['is_admin'] == true;
+            await prefs.setBool('is_admin', isAdmin);
+            print('---- AUTO-LOGIN DEBUG: is_admin from server = $isAdmin');
+
             setState(() {
               _token = token;
               _username = username;
+              _isAdmin = isAdmin;
             });
             await _fetchUserGroup(prefs, token);
             print('Auto-login successful for user: $username');
@@ -263,11 +282,13 @@ class _HomePageState extends State<HomePage> {
       await prefs.remove('permanent_token');
       await prefs.remove('username');
       await prefs.remove('user_group');
+      await prefs.remove('is_admin');
 
       setState(() {
         _token = null;
         _username = null;
         _userGroup = null;
+        _isAdmin = false;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -324,10 +345,17 @@ class _HomePageState extends State<HomePage> {
       weekTypeDisplay: weekTypeDisplay,
       username: _username,
       userGroup: _userGroup,
+      isAdmin: _isAdmin,
       onGroupSelect: _selectGroup,
       onWeekTypeSelect: _selectWeekType,
       onLogout: _logout,
       onReplacementsOpen: _openReplacementsWebsite,
+      onAdminPanel: () {
+        Navigator.of(context).pop(); // Закрываем drawer
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const AdminPanelScreen()),
+        );
+      },
     );
   }
 
@@ -626,10 +654,14 @@ class _HomePageState extends State<HomePage> {
         final data = jsonDecode(res.body);
         if (data['success'] == true) {
           final token = data['token'];
+          final bool isAdmin = data['is_admin'] == true; // Parse explicitly
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setString(
-              'permanent_token', token); // Сохраняем постоянный токен
+          await prefs.setString('permanent_token', token);
           await prefs.setString('username', username);
+          await prefs.setBool('is_admin', isAdmin);
+
+          print(
+              '---- LOGIN DEBUG: is_admin from server = $isAdmin'); // Отладочный принт
 
           // Получаем группу пользователя
           await _fetchUserGroup(prefs, token);
@@ -637,6 +669,7 @@ class _HomePageState extends State<HomePage> {
           setState(() {
             _token = token;
             _username = username;
+            _isAdmin = isAdmin;
           });
           ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Авторизация успешна')));
@@ -664,18 +697,29 @@ class _HomePageState extends State<HomePage> {
   Future<void> _fetchUserGroup(SharedPreferences prefs, String token) async {
     try {
       final response = await http.get(
-        Uri.parse('$serverBaseUrl/user/group'),
+        Uri.parse('$serverBaseUrl/user/group/'),
         headers: {'Authorization': 'Bearer $token'},
       );
+      print(
+          '==== USER GROUP RESPONSE: ${response.statusCode} ==== body: ${response.body}');
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final group = data['group'] as String?;
+        // Исправленный парсинг - работает с любым типом
+        final rawIsAdmin = data['is_admin'];
+        final isAdmin = rawIsAdmin == true || rawIsAdmin == 'true';
+        print(
+            '==== RAW is_admin = $rawIsAdmin (type: ${rawIsAdmin.runtimeType}) => parsed: $isAdmin ====');
+
         if (group != null) {
           await prefs.setString('user_group', group);
-          setState(() {
-            _userGroup = group;
-          });
         }
+        await prefs.setBool('is_admin', isAdmin);
+
+        setState(() {
+          if (group != null) _userGroup = group;
+          _isAdmin = isAdmin;
+        });
       } else if (response.statusCode == 401) {
         // Токен невалиден, выходим
         await _logout();

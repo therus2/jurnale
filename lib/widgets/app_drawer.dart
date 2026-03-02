@@ -12,6 +12,8 @@ class AppDrawer extends StatefulWidget {
   final Function(String)? onWeekTypeSelect;
   final VoidCallback? onLogout;
   final VoidCallback? onReplacementsOpen;
+  final VoidCallback? onAdminPanel;
+  final bool isAdmin;
   final String dayTitle;
 
   const AppDrawer({
@@ -25,6 +27,8 @@ class AppDrawer extends StatefulWidget {
     this.onWeekTypeSelect,
     this.onLogout,
     this.onReplacementsOpen,
+    this.onAdminPanel,
+    this.isAdmin = false,
     this.dayTitle = 'Меню',
   }) : super(key: key);
 
@@ -43,7 +47,7 @@ class _AppDrawerState extends State<AppDrawer> {
         padding: EdgeInsets.zero,
         children: [
           Container(
-            height: 180,
+            padding: const EdgeInsets.only(top: 24, bottom: 16),
             decoration: BoxDecoration(
               color: isDark
                   ? Colors.grey[900]
@@ -75,7 +79,9 @@ class _AppDrawerState extends State<AppDrawer> {
                     ),
                     const SizedBox(height: 12),
                     if (widget.username != null)
-                      _infoText('Пользователь: ${widget.username}', isDark),
+                      _infoText(
+                          'Пользователь: ${widget.username} [admin=${widget.isAdmin}]',
+                          isDark),
                     _infoText(
                         'Подгруппа: ${widget.currentGroup ?? "-"}', isDark),
                     if (widget.weekTypeDisplay != null)
@@ -115,6 +121,15 @@ class _AppDrawerState extends State<AppDrawer> {
               title: const Text('Замены расписания'),
               onTap: widget.onReplacementsOpen,
             ),
+
+          ListTile(
+            leading:
+                const Icon(Icons.admin_panel_settings, color: Colors.orange),
+            title: const Text('Панель администратора',
+                style: TextStyle(
+                    color: Colors.orange, fontWeight: FontWeight.bold)),
+            onTap: widget.onAdminPanel,
+          ),
 
           const Divider(),
 

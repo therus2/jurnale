@@ -7,8 +7,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:uuid/uuid.dart';
 import 'package:http/http.dart' as http;
 
-// ========== Настройки ==========
-const String serverBaseUrl = 'https://80.93.63.72/api';
+import 'main.dart' show serverBaseUrl;
 
 int getWeekNumber(DateTime date) {
   final firstDayOfYear = DateTime(date.year, 1, 1);
