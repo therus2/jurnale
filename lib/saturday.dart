@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle, HapticFeedback;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'pair_detail.dart';
-import 'dart:math' as math;
 import 'widgets/app_drawer.dart';
 
 class DayScreen extends StatefulWidget {
