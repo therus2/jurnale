@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
@@ -23,7 +24,7 @@ import 'theme_manager.dart';
 import 'widgets/app_drawer.dart';
 
 // ======= Настройки =======
-const String serverBaseUrl = 'https://80.93.63.72/api';
+const String serverBaseUrl = 'https://idniu.arbuzza150r.org:8000/api';
 
 // ======= Вспомогательные функции =======
 int getWeekNumber(DateTime date) {
@@ -81,6 +82,15 @@ class MyApp extends StatelessWidget {
             brightness: Brightness.dark,
           ),
           home: const HomePage(),
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('ru', 'RU'),
+            Locale('en', 'US'),
+          ],
         );
       },
     );
@@ -806,6 +816,7 @@ class _HomePageState extends State<HomePage> {
               'created_at': jsonData['created_at'] ?? now,
               'updated_at': jsonData['updated_at'] ?? now,
               'deleted': false,
+              'target_date': jsonData['target_date'],
             });
           } catch (e) {
             print('Error parsing local note: $e');
@@ -828,6 +839,39 @@ class _HomePageState extends State<HomePage> {
           body: jsonEncode({'notes': notes}));
 
       if (res.statusCode == 200) {
+        // Успешно. Обновляем локальные заметки, помечая их как серверные
+        final data = jsonDecode(res.body);
+        if (data['notes'] != null) {
+          final serverNotes = data['notes'] as List;
+          final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+          for (var sn in serverNotes) {
+            final String subject = sn['subject'] ?? '';
+            final String key = 'notes_$subject';
+            final String serverId = sn['id']?.toString() ?? '';
+
+            List<String> list = await _getSafeNotesList(prefs, key);
+            bool updated = false;
+
+            for (int i = 0; i < list.length; i++) {
+              final local = jsonDecode(list[i]) as Map<String, dynamic>;
+              // Ищем либо по ID, либо по совпадению текста и автора
+              if (local['id']?.toString() == serverId ||
+                  (local['text'] == sn['text'] &&
+                      local['author'] == sn['author_name'])) {
+                local['isServer'] = true;
+                local['id'] = serverId;
+                local['target_date'] = sn['target_date'];
+                list[i] = jsonEncode(local);
+                updated = true;
+                break;
+              }
+            }
+            if (updated) {
+              await prefs.setStringList(key, list);
+            }
+          }
+        }
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('Локальные заметки отправлены на сервер')));
       } else if (res.statusCode == 401) {
@@ -927,6 +971,7 @@ class _HomePageState extends State<HomePage> {
             'isServer': true,
             'created_at': n['created_at'] ?? uploaded,
             'updated_at': n['updated_at'] ?? uploaded,
+            'target_date': n['target_date'],
           });
 
           if (existingIndex != null) {

@@ -8,7 +8,7 @@ import 'package:uuid/uuid.dart';
 import 'package:http/http.dart' as http;
 
 // ========== Настройки ==========
-const String serverBaseUrl = 'https://80.93.63.72/api';
+const String serverBaseUrl = 'https://idniu.arbuzza150r.org:8000/api';
 
 int getWeekNumber(DateTime date) {
   final firstDayOfYear = DateTime(date.year, 1, 1);
@@ -50,6 +50,7 @@ class Note {
   final String? id;
   final String subject;
   final bool isServer;
+  final String? targetDate; // Формат YYYY-MM-DD
 
   Note({
     required this.text,
@@ -58,6 +59,7 @@ class Note {
     required this.subject,
     required this.isServer,
     this.id,
+    this.targetDate,
   });
 
   Map<String, dynamic> toJson() => {
@@ -67,6 +69,7 @@ class Note {
         'subject': subject,
         'isServer': isServer,
         'id': id,
+        'target_date': targetDate,
       };
 
   factory Note.fromJson(Map<String, dynamic> json) => Note(
@@ -78,6 +81,7 @@ class Note {
         subject: json['subject']?.toString() ?? '',
         isServer: json['isServer'] == true,
         id: json['id']?.toString(),
+        targetDate: json['target_date']?.toString(),
       );
 }
 
@@ -97,6 +101,7 @@ class _PairDetailPageState extends State<PairDetailPage> {
   bool _userCanDelete = false;
   String? _userGroup;
   String? _username;
+  DateTime? _selectedDate; // Выбранная дата для ДЗ
 
   String _noteKey(String subject) => 'notes_${subject}';
 
@@ -182,6 +187,7 @@ class _PairDetailPageState extends State<PairDetailPage> {
               subject: widget.pair.subject,
               isServer: false,
               id: Uuid().v4(),
+              targetDate: null,
             ));
           }
         }
@@ -227,10 +233,16 @@ class _PairDetailPageState extends State<PairDetailPage> {
         subject: widget.pair.subject,
         isServer: false,
         id: Uuid().v4(),
+        targetDate: _selectedDate != null
+            ? DateFormat('yyyy-MM-dd').format(_selectedDate!)
+            : null,
       );
       saved.add(jsonEncode(newNote.toJson()));
       await sp.setStringList(key, saved);
       ctrl.clear();
+      setState(() {
+        _selectedDate = null;
+      });
       await loadNotes();
     } catch (e) {
       print('Error adding note: $e');
@@ -299,7 +311,8 @@ class _PairDetailPageState extends State<PairDetailPage> {
         headers: {'Authorization': 'Bearer $token'},
       );
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 404) {
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
         final subject = widget.pair.subject;
         final key = 'notes_$subject';
 
@@ -315,8 +328,11 @@ class _PairDetailPageState extends State<PairDetailPage> {
         });
         await prefs.setStringList(key, list);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Заметка удалена с сервера и с телефона')));
+        String successMsg = response.statusCode == 200
+            ? 'Заметка удалена с сервера и с телефона'
+            : 'Заметка уже удалена на сервере. Удаляем локально...';
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(successMsg)));
 
         await loadNotes();
       } else {
@@ -368,10 +384,35 @@ class _PairDetailPageState extends State<PairDetailPage> {
                     controller: ctrl,
                     decoration: InputDecoration(
                       labelText: 'Добавить заметку для ${widget.pair.subject}',
+                      prefixIcon: IconButton(
+                        icon: Icon(Icons.calendar_today,
+                            color: _selectedDate != null
+                                ? Colors.blue
+                                : Colors.grey),
+                        onPressed: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _selectedDate ?? DateTime.now(),
+                            firstDate:
+                                DateTime.now().subtract(Duration(days: 30)),
+                            lastDate: DateTime.now().add(Duration(days: 365)),
+                            locale: const Locale('ru', 'RU'),
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              _selectedDate = picked;
+                            });
+                          }
+                        },
+                        tooltip: 'Выбрать дату ДЗ',
+                      ),
                       suffixIcon: IconButton(
                         icon: Icon(Icons.send),
                         onPressed: addNote,
                       ),
+                      helperText: _selectedDate != null
+                          ? 'Будет сохранено как ДЗ на ${DateFormat('dd.MM.yyyy').format(_selectedDate!)}'
+                          : 'Можно выбрать дату ДЗ через иконку календаря',
                     ),
                   ),
                   SizedBox(height: 16),
@@ -494,6 +535,27 @@ class _PairDetailPageState extends State<PairDetailPage> {
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
+                                      if (note.targetDate != null) ...[
+                                        SizedBox(height: 4),
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                Colors.orange.withOpacity(0.2),
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            '📝 ЗАДАНО НА: ${DateFormat('dd.MM.yyyy').format(DateTime.parse(note.targetDate!))}',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.orange[800],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                   trailing: Row(
